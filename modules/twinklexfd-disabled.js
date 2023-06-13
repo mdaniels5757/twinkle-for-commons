@@ -971,7 +971,6 @@ Twinkle.xfd.callbacks = {
 		} else {
 			editsummary = 'Logging ' + utils.toTLACase(params.venue) + ' nomination of [[:' + Morebits.pageNameNorm + ']].';
 		}
-
 		// If a logged file is deleted but exists on commons, the wikilink will be blue, so provide a link to the log
 		var fileLogLink = mw.config.get('wgNamespaceNumber') === 6 ? ' ([{{fullurl:Special:Log|page=' + mw.util.wikiUrlencode(mw.config.get('wgPageName')) + '}} log])' : '';
 		// CFD/S and RM don't have canonical links
