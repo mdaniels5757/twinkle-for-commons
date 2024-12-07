@@ -5,13 +5,13 @@
  * |           Please discuss changes at [[WT:TW]] before editing.           |
  * +-------------------------------------------------------------------------+
  *
- * Imported from github [https://github.com/azatoth/twinkle].
+ * Imported from github [https://github.com/mdaniels5757/twinkle-for-commons].
  * All changes should be made in the repository, otherwise they will be lost.
  *
  * ----------
  *
  * This is AzaToth's Twinkle, the popular script sidekick for newbies, admins, and
- * every Wikipedian in between. Visit [[WP:TW]] for more information.
+ * every Wikipedian in between. Visit [[COM:TW]] for more information.
  */
 // <nowiki>
 
@@ -26,20 +26,6 @@ if (!Morebits.userIsInGroup('autoconfirmed') && !Morebits.userIsInGroup('confirm
 
 var Twinkle = {};
 window.Twinkle = Twinkle;  // allow global access
-
-/**
- * Twinkle-specific data shared by multiple modules
- * Likely customized per installation
- */
-// Custom change tag(s) to be applied to all Twinkle actions, create at Special:Tags
-Twinkle.changeTags = 'twinkle';
-// Available for actions that don't (yet) support tags
-// currently: FlaggedRevs and PageTriage
-Twinkle.summaryAd = ' ([[WP:TW|TW]])';
-
-// Various hatnote templates, used when tagging (csd/xfd/tag/prod/protect) to ensure [[w:en:MOS:ORDER]]
-Twinkle.hatnoteRegex = 'short description|hatnote|main|correct title|dablink|distinguish|for|further|selfref|year dab|similar names|highway detail hatnote|broader|about(?:-distinguish| other people)?|other\\s?(?:hurricane(?: use)?s|people|persons|places|ships|uses(?: of)?)|redirect(?:-(?:distinguish|synonym|multi))?|see\\s?(?:wiktionary|also(?: if exists)?)';
-
 
 Twinkle.initCallbacks = [];
 /**
@@ -69,11 +55,12 @@ Twinkle.defaultConfig = {
 	disabledSysopModules: [],
 
 	// ARV
-	spiWatchReport: 'yes',
+	// spiWatchReport: 'yes',
 
 	// Block
-	defaultToPartialBlocks: false,
-	blankTalkpageOnIndefBlock: false,
+	// defaultToBlock64: false,
+	// defaultToPartialBlocks: false,
+	// blankTalkpageOnIndefBlock: false,
 
 	// Fluff (revert and rollback)
 	autoMenuAfterRollback: false,
@@ -82,31 +69,60 @@ Twinkle.defaultConfig = {
 	rollbackInPlace: false,
 	markRevertedPagesAsMinor: [ 'vand' ],
 	watchRevertedPages: [ 'agf', 'norm', 'vand', 'torev' ],
+	watchRevertedExpiry: '1 month',
 	offerReasonOnNormalRevert: true,
 	confirmOnFluff: false,
+	confirmOnMobileFluff: true,
 	showRollbackLinks: [ 'diff', 'others' ],
 
 	// DI (twinkleimage)
 	notifyUserOnDeli: true,
-	deliWatchPage: 'default',
-	deliWatchUser: 'default',
+	deliWatchPage: '1 month',
+	deliWatchUser: '1 month',
 
-	// PROD
-	watchProdPages: true,
-	markProdPagesAsPatrolled: false,
-	prodReasonDefault: '',
-	logProdPages: false,
-	prodLogPageName: 'PROD log',
+	// Protect
+	// watchRequestedPages: 'yes',
+	// watchPPTaggedPages: 'default',
+	// watchProtectedPages: 'default',
 
 	// CSD
 	speedySelectionStyle: 'buttonClick',
 	watchSpeedyPages: [ 'g3', 'g5', 'g10', 'g11', 'g12' ],
+	watchSpeedyExpiry: '1 month',
 	markSpeedyPagesAsPatrolled: false,
+	watchSpeedyUser: '1 month',
 
 	// these next two should probably be identical by default
-	welcomeUserOnSpeedyDeletionNotification: [ 'db', 'g1', 'g2', 'g3', 'g4', 'g6', 'g10', 'g11', 'g12', 'g13', 'g14', 'a1', 'a2', 'a3', 'a5', 'a7', 'a9', 'a10', 'a11', 'f1', 'f2', 'f3', 'f7', 'f9', 'f10', 'u3', 'u5', 't3', 'p1', 'p2' ],
-	notifyUserOnSpeedyDeletionNomination: [ 'db', 'g1', 'g2', 'g3', 'g4', 'g6', 'g10', 'g11', 'g12', 'g13', 'g14', 'a1', 'a2', 'a3', 'a5', 'a7', 'a9', 'a10', 'a11', 'f1', 'f2', 'f3', 'f7', 'f9', 'f10', 'u3', 'u5', 't3', 'p1', 'p2' ],
-	warnUserOnSpeedyDelete: [ 'db', 'g1', 'g2', 'g3', 'g4', 'g6', 'g10', 'g11', 'g12', 'g13', 'g14', 'a1', 'a2', 'a3', 'a5', 'a7', 'a9', 'a10', 'a11', 'f1', 'f2', 'f3', 'f7', 'f9', 'f10', 'u3', 'u5', 't3', 'p1', 'p2' ],
+	welcomeUserOnSpeedyDeletionNotification: [
+		'db',
+		'g1', 'g3', 'g4', 'g5', 'g6', 'g8', 'g9', 'g10', 'g11',
+		'u3',
+		'f1', 'f2', 'f3', 'f4', 'f7', 'f8', 'f9', 'f10',
+		'c1', 'c2',
+		't1', 't2',
+		'ga1', 'ga2',
+		'com1'
+	],
+	notifyUserOnSpeedyDeletionNomination: [
+		'db',
+		'g1', 'g3', 'g4', 'g5', 'g6', 'g8', 'g9', 'g10', 'g11',
+		'u3',
+		'f1', 'f2', 'f3', 'f4', 'f7', 'f8', 'f9', 'f10',
+		'c1', 'c2',
+		't1', 't2',
+		'ga1', 'ga2',
+		'com1'
+	],
+	warnUserOnSpeedyDelete: [
+		'db',
+		'g1', 'g3', 'g4', 'g5', 'g6', 'g8', 'g9', 'g10', 'g11',
+		'u3',
+		'f1', 'f2', 'f3', 'f4', 'f7', 'f8', 'f9', 'f10',
+		'c1', 'c2',
+		't1', 't2',
+		'ga1', 'ga2',
+		'com1'
+	],
 	promptForSpeedyDeletionSummary: [],
 	deleteTalkPageOnDelete: true,
 	deleteRedirectsOnDelete: true,
@@ -118,26 +134,26 @@ Twinkle.defaultConfig = {
 	noLogOnSpeedyNomination: [ 'u1' ],
 
 	// Unlink
-	unlinkNamespaces: [ '0', '10', '100', '118' ],
+	unlinkNamespaces: [ '0', '10'],
 
 	// Warn
-	defaultWarningGroup: '1',
-	combinedSingletMenus: false,
-	showSharedIPNotice: true,
-	watchWarnings: true,
-	oldSelect: false,
-	customWarningList: [],
+	// defaultWarningGroup: '10',
+	// combinedSingletMenus: false,
+	// showSharedIPNotice: true,
+	// watchWarnings: '1 month',
+	// oldSelect: false,
+	// customWarningList: [],
 
 	// XfD
-	logXfdNominations: false,
-	xfdLogPageName: 'XfD log',
-	noLogOnXfdNomination: [],
-	xfdWatchDiscussion: 'default',
-	xfdWatchList: 'no',
-	xfdWatchPage: 'default',
-	xfdWatchUser: 'default',
-	xfdWatchRelated: 'default',
-	markXfdPagesAsPatrolled: true,
+	// logXfdNominations: false,
+	// xfdLogPageName: 'XfD log',
+	// noLogOnXfdNomination: [],
+	// xfdWatchDiscussion: 'default',
+	// xfdWatchList: 'no',
+	// xfdWatchPage: '1 month',
+	// xfdWatchUser: '1 month',
+	// xfdWatchRelated: '1 month',
+	// markXfdPagesAsPatrolled: true,
 
 	// Hidden preferences
 	autolevelStaleDays: 3, // Huggle is 3, CBNG is 2
@@ -146,48 +162,37 @@ Twinkle.defaultConfig = {
 	batchChunks: 50,
 
 	// Deprecated options, as a fallback for add-on scripts/modules
-	summaryAd: ' ([[WP:TW|TW]])',
-	deletionSummaryAd: ' ([[WP:TW|TW]])',
-	protectionSummaryAd: ' ([[WP:TW|TW]])',
+	summaryAd: ' ([[COM:TW|TW]])',
+	deletionSummaryAd: ' ([[COM:TW|TW]])',
+	protectionSummaryAd: ' ([[COM:TW|TW]])'
 
 	// Formerly defaultConfig.friendly:
 	// Tag
-	groupByDefault: true,
-	watchTaggedPages: true,
-	watchMergeDiscussions: true,
-	markTaggedPagesAsMinor: false,
-	markTaggedPagesAsPatrolled: true,
-	tagArticleSortOrder: 'cat',
-	customTagList: [],
-	customFileTagList: [],
-	customRedirectTagList: [],
-
-	// Welcome
-	topWelcomes: false,
-	watchWelcomes: true,
-	welcomeHeading: 'Welcome',
-	insertHeadings: true,
-	insertUsername: true,
-	insertSignature: true,  // sign welcome templates, where appropriate
-	quickWelcomeMode: 'norm',
-	quickWelcomeTemplate: 'welcome',
-	customWelcomeList: [],
-	customWelcomeSignature: true,
+	// groupByDefault: true,
+	// watchTaggedVenues: ['articles', 'drafts', 'redirects', 'files'],
+	// watchTaggedPages: '1 month',
+	// watchMergeDiscussions: '1 month',
+	// markTaggedPagesAsMinor: false,
+	// markTaggedPagesAsPatrolled: false,
+	// tagArticleSortOrder: 'cat',
+	// customTagList: [],
+	// customFileTagList: [],
+	// customRedirectTagList: [],
 
 	// Talkback
-	markTalkbackAsMinor: true,
-	insertTalkbackSignature: true,  // always sign talkback templates
-	talkbackHeading: 'New message from ' + mw.config.get('wgUserName'),
-	adminNoticeHeading: 'Notice',
-	mailHeading: "You've got mail!",
+	// markTalkbackAsMinor: true,
+	// insertTalkbackSignature: true,  // always sign talkback templates
+	// talkbackHeading: 'New message from ' + mw.config.get('wgUserName'),
+	// mailHeading: "You've got mail!",
 
 	// Shared
-	markSharedIPAsMinor: true
+	// markSharedIPAsMinor: true
 };
 
 // now some skin dependent config.
 switch (mw.config.get('skin')) {
 	case 'vector':
+	case 'vector-2022':
 		Twinkle.defaultConfig.portletArea = 'right-navigation';
 		Twinkle.defaultConfig.portletId = 'p-twinkle';
 		Twinkle.defaultConfig.portletName = 'TW';
@@ -276,17 +281,27 @@ Twinkle.addPortlet = function(navigation, id, text, type, nextnodeid) {
 
 	// verify/normalize input
 	var skin = mw.config.get('skin');
-	if (skin !== 'vector' || (navigation !== 'left-navigation' && navigation !== 'right-navigation')) {
+	if ((skin !== 'vector' && skin !== 'vector-2022') || (navigation !== 'left-navigation' && navigation !== 'right-navigation')) {
 		type = null; // menu supported only in vector's #left-navigation & #right-navigation
 	}
 	var outerNavClass, innerDivClass;
 	switch (skin) {
 		case 'vector':
+		case 'vector-2022':
 			// XXX: portal doesn't work
 			if (navigation !== 'portal' && navigation !== 'left-navigation' && navigation !== 'right-navigation') {
 				navigation = 'mw-panel';
 			}
-			outerNavClass = 'vector-menu vector-menu-' + (navigation === 'mw-panel' ? 'portal' : type === 'menu' ? 'dropdown' : 'tabs');
+
+			outerNavClass = 'mw-portlet vector-menu';
+			if (navigation === 'mw-panel') {
+				outerNavClass += ' vector-menu-portal';
+			} else if (type === 'menu') {
+				outerNavClass += ' vector-menu-dropdown vector-dropdown vector-menu-dropdown-noicon';
+			} else {
+				outerNavClass += ' vector-menu-tabs';
+			}
+
 			innerDivClass = 'vector-menu-content';
 			break;
 		case 'modern':
@@ -306,9 +321,16 @@ Twinkle.addPortlet = function(navigation, id, text, type, nextnodeid) {
 	}
 
 	// Build the DOM elements.
-	var outerNav = document.createElement('nav');
+	var outerNav, heading;
+	if (skin === 'vector-2022') {
+		outerNav = document.createElement('div');
+		heading = document.createElement('label');
+	} else {
+		outerNav = document.createElement('nav');
+		heading = document.createElement('h3');
+	}
+
 	outerNav.setAttribute('aria-labelledby', id + '-label');
-	// Vector getting vector-menu-empty FIXME TODO
 	outerNav.className = outerNavClass + ' emptyPortlet';
 	outerNav.id = id;
 	if (nextnode && nextnode.parentNode === root) {
@@ -317,12 +339,12 @@ Twinkle.addPortlet = function(navigation, id, text, type, nextnodeid) {
 		root.appendChild(outerNav);
 	}
 
-	var h3 = document.createElement('h3');
-	h3.id = id + '-label';
+	heading.id = id + '-label';
 	var ul = document.createElement('ul');
 
-	if (skin === 'vector') {
+	if (skin === 'vector' || skin === 'vector-2022') {
 		ul.className = 'vector-menu-content-list';
+		heading.className = 'vector-menu-heading';
 
 		// add invisible checkbox to keep menu open when clicked
 		// similar to the p-cactions ("More") menu
@@ -337,7 +359,7 @@ Twinkle.addPortlet = function(navigation, id, text, type, nextnodeid) {
 			// timeless have no title, and it has no span
 			var span = document.createElement('span');
 			span.appendChild(document.createTextNode(text));
-			h3.appendChild(span);
+			heading.appendChild(span);
 
 			var a = document.createElement('a');
 			a.href = '#';
@@ -346,14 +368,14 @@ Twinkle.addPortlet = function(navigation, id, text, type, nextnodeid) {
 				e.preventDefault();
 			});
 
-			h3.appendChild(a);
+			heading.appendChild(a);
 		}
 	} else {
 		// Basically just Timeless
-		h3.appendChild(document.createTextNode(text));
+		heading.appendChild(document.createTextNode(text));
 	}
 
-	outerNav.appendChild(h3);
+	outerNav.appendChild(heading);
 
 	if (innerDivClass) {
 		var innerDiv = document.createElement('div');
@@ -364,11 +386,8 @@ Twinkle.addPortlet = function(navigation, id, text, type, nextnodeid) {
 		outerNav.appendChild(ul);
 	}
 
-
 	return outerNav;
-
 };
-
 
 /**
  * **************** Twinkle.addPortletLink() ****************
@@ -407,7 +426,7 @@ $.ajax({
 	dataType: 'text'
 })
 	.fail(function () {
-		mw.notify('Could not load your Twinkle preferences', {type: 'error'});
+		mw.notify('Could not load your Twinkle preferences, resorting to default preferences');
 	})
 	.done(function (optionsText) {
 
@@ -487,9 +506,75 @@ Twinkle.load = function () {
 	}
 
 	// Hide the lingering space if the TW menu is empty
-	if (mw.config.get('skin') === 'vector' && Twinkle.getPref('portletType') === 'menu' && $('#p-twinkle').length === 0) {
+	var isVector = mw.config.get('skin') === 'vector' || mw.config.get('skin') === 'vector-2022';
+	if (isVector && Twinkle.getPref('portletType') === 'menu' && $('#p-twinkle').length === 0) {
 		$('#p-cactions').css('margin-right', 'initial');
 	}
+
+	// If using a skin with space for lots of modules, display a link to Twinkle Preferences
+	var usingSkinWithDropDownMenu = mw.config.get('skin') === 'vector' || mw.config.get('skin') === 'vector-2022' || mw.config.get('skin') === 'timeless';
+	if (usingSkinWithDropDownMenu) {
+		Twinkle.addPortletLink(mw.util.getUrl('Commons:Twinkle/Preferences'), 'Config', 'tw-config', 'Open Twinkle preferences page');
+	}
+};
+
+
+/**
+ * Twinkle-specific data shared by multiple modules
+ * Likely customized per installation
+ */
+
+// Custom change tag(s) to be applied to all Twinkle actions, create at Special:Tags
+Twinkle.changeTags = 'twinkle';
+// Available for actions that don't (yet) support tags
+// currently: FlaggedRevs and PageTriage
+Twinkle.summaryAd = ' ([[COM:TW|TW]])';
+
+// Various hatnote templates, used when tagging (csd/xfd/tag/prod/protect) to
+// ensure MOS:ORDER
+Twinkle.hatnoteRegex = 'short description|hatnote|main|correct title|dablink|distinguish|for|further|selfref|year dab|similar names|highway detail hatnote|broader|about(?:-distinguish| other people)?|other\\s?(?:hurricane(?: use)?s|people|persons|places|ships|uses(?: of)?)|redirect(?:-(?:distinguish|synonym|multi))?|see\\s?(?:wiktionary|also(?: if exists)?)';
+
+// Used in XFD and PROD
+Twinkle.makeFindSourcesDiv = function makeSourcesDiv(divID) {
+	if (!$(divID).length) {
+		return;
+	}
+	if (!Twinkle.findSources) {
+		var parser = new Morebits.wiki.preview($(divID)[0]);
+		parser.beginRender('({{Find sources|' + Morebits.pageNameNorm + '}})', 'WP:AFD').then(function() {
+			// Save for second-time around
+			Twinkle.findSources = parser.previewbox.innerHTML;
+			$(divID).removeClass('morebits-previewbox');
+		});
+	} else {
+		$(divID).html(Twinkle.findSources);
+	}
+};
+
+/** Twinkle-specific utility functions shared by multiple modules */
+// Used in batch, unlink, and deprod to sort pages by namespace, as
+// json formatversion=2 sorts by pageid instead (#1251)
+Twinkle.sortByNamespace = function(first, second) {
+	return first.ns - second.ns || (first.title > second.title ? 1 : -1);
+};
+
+// Used in batch listings to link to the page in question with >
+Twinkle.generateArrowLinks = function (checkbox) {
+	var link = Morebits.htmlNode('a', ' >');
+	link.setAttribute('class', 'tw-arrowpage-link');
+	link.setAttribute('href', mw.util.getUrl(checkbox.value));
+	link.setAttribute('target', '_blank');
+	checkbox.nextElementSibling.append(link);
+};
+
+// Used in deprod and unlink listings to link the page title
+Twinkle.generateBatchPageLinks = function (checkbox) {
+	var $checkbox = $(checkbox);
+	var link = Morebits.htmlNode('a', $checkbox.val());
+	link.setAttribute('class', 'tw-batchpage-link');
+	link.setAttribute('href', mw.util.getUrl($checkbox.val()));
+	link.setAttribute('target', '_blank');
+	$checkbox.next().prepend([link, ' ']);
 };
 
 }(window, document, jQuery)); // End wrap with anonymous function

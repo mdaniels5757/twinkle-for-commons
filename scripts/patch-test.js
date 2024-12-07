@@ -1,10 +1,4 @@
 /* eslint-env node, es6 */
-/* eslint-disable no-console */
-/* eslint-disable es5/no-destructuring */
-/* eslint-disable es5/no-template-literals */
-/* eslint-disable es5/no-es6-methods */
-/* eslint-disable es5/no-shorthand-properties */
-/* eslint-disable es5/no-block-scoping */
 
 /**
  * Creates a file patch-test-loader.js with the necessary import statements
@@ -12,21 +6,23 @@
  *
  * How to use:
  * - Run `npm run patchtest` which generates patch-test-loader.js
- * - Set up a localhost server (such as by using server.js or by running
- *   php -S localhost:5500) and load patch-test-loader.js in the wiki environment,
+ * - Set up a localhost server (such as by using npm run server or by running
+ *   php -S 127.0.0.1:5500) and load patch-test-loader.js in the wiki environment,
  *   using the browser console or the common.js page.
+ * - You can provide a different port by running `npm run patchtest -- 1234`
  */
 
 const fs = require('fs');
 const {execSync} = require('child_process');
 
-const server = 'http://127.0.0.1:5500';
+const port = isNaN(Number(process.argv[2])) ? '5500' : process.argv[2];
+const server = 'http://127.0.0.1:' + port;
 
 // find the last common commit between this branch and master, and get the list
 // of files changed since that commit
 try {
-	var stdout = execSync('git diff $(git merge-base $(git rev-parse --abbrev-ref HEAD) master) --name-only').toString();
-	let changedFiles = stdout.split(/\r?\n/);
+	let lastCommonCommit = execSync('git merge-base HEAD master').toString().trim();
+	let changedFiles = execSync(`git diff ${lastCommonCommit} --name-only`).toString().split(/\r?\n/);
 	createTestLoader(changedFiles);
 } catch (err) {
 	console.log(err.toString());
@@ -50,6 +46,7 @@ function createTestLoader(changedFiles) {
 			importsCount++;
 			return `mw.loader.load('${server}/${file}', 'text/css');`;
 		}
+		return '';
 	};
 
 	let jsLoaderSource = `// Wait for Twinkle gadget to load, so that we can then overwrite it
@@ -84,7 +81,7 @@ function createTestLoader(changedFiles) {
 		${importLine('modules/twinklexfd.js')}
 	});`.replace(/^\t/mg, '').replace(/^\s*$/mg, '');
 
-	fs.writeFileSync('./patch-test-loader.js', jsLoaderSource, console.log);
+	fs.writeFileSync('./scripts/patch-test-loader.js', jsLoaderSource, console.log);
 
-	console.log(`Wrote import statements for ${importsCount} modified file${importsCount > 1 ? 's' : ''} to patch-test-loader.js`);
+	console.log(`Wrote import statements for ${importsCount} modified file${importsCount > 1 ? 's' : ''} to scripts/patch-test-loader.js`);
 }

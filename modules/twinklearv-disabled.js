@@ -18,27 +18,34 @@ Twinkle.arv = function twinklearv() {
 		return;
 	}
 
-	var title = mw.util.isIPAddress(username) ? 'Report IP to administrators' : 'Report user to administrators';
+	var isIP = mw.util.isIPAddress(username, true);
+	// Ignore ranges wider than the CIDR limit
+	if (Morebits.ip.isRange(username) && !Morebits.ip.validCIDR(username)) {
+		return;
+	}
+	var userType = isIP ? 'IP' + (Morebits.ip.isRange(username) ? ' range' : '') : 'user';
 
 	Twinkle.addPortletLink(function() {
-		Twinkle.arv.callback(username);
-	}, 'ARV', 'tw-arv', title);
+		Twinkle.arv.callback(username, isIP);
+	}, 'ARV', 'tw-arv', 'Report ' + userType + ' to administrators');
 };
 
-Twinkle.arv.callback = function (uid) {
+Twinkle.arv.callback = function (uid, isIP) {
 	var Window = new Morebits.simpleWindow(600, 500);
 	Window.setTitle('Advance Reporting and Vetting'); // Backronym
 	Window.setScriptName('Twinkle');
-	Window.addFooterLink('Guide to AIV', 'WP:GAIV');
-	Window.addFooterLink('UAA instructions', 'WP:UAAI');
-	Window.addFooterLink('About SPI', 'WP:SPI');
+	Window.addFooterLink('AIV guide', 'WP:GAIV');
+	Window.addFooterLink('UAA guide', 'WP:UAAI');
+	Window.addFooterLink('SPI guide', 'Wikipedia:Sockpuppet investigations/SPI/Guide to filing cases');
+	Window.addFooterLink('ARV prefs', 'WP:TW/PREF#arv');
 	Window.addFooterLink('Twinkle help', 'WP:TW/DOC#arv');
+	Window.addFooterLink('Give feedback', 'WT:TW');
 
 	var form = new Morebits.quickForm(Twinkle.arv.callback.evaluate);
 	var categories = form.append({
 		type: 'select',
 		name: 'category',
-		label: 'Select report type: ',
+		label: 'Select report type:',
 		event: Twinkle.arv.callback.changeCategory
 	});
 	categories.append({
@@ -50,7 +57,7 @@ Twinkle.arv.callback = function (uid) {
 		type: 'option',
 		label: 'Username (WP:UAA)',
 		value: 'username',
-		disabled: mw.util.isIPAddress(uid)
+		disabled: isIP
 	});
 	categories.append({
 		type: 'option',
@@ -65,8 +72,16 @@ Twinkle.arv.callback = function (uid) {
 	categories.append({
 		type: 'option',
 		label: 'Edit warring (WP:AN3)',
-		value: 'an3'
+		value: 'an3',
+		disabled: Morebits.ip.isRange(uid) // rvuser template doesn't support ranges
 	});
+	form.append({
+		type: 'div',
+		label: '',
+		style: 'color: red',
+		id: 'twinkle-arv-blockwarning'
+	});
+
 	form.append({
 		type: 'field',
 		label: 'Work area',
@@ -82,6 +97,34 @@ Twinkle.arv.callback = function (uid) {
 	var result = form.render();
 	Window.setContent(result);
 	Window.display();
+
+	// Check if the user is blocked, update notice
+	var query = {
+		action: 'query',
+		list: 'blocks',
+		bkprop: 'range|flags',
+		format: 'json'
+	};
+	if (isIP) {
+		query.bkip = uid;
+	} else {
+		query.bkusers = uid;
+	}
+	new Morebits.wiki.api("Checking the user's block status", query, function(apiobj) {
+		var blocklist = apiobj.getResponse().query.blocks;
+		if (blocklist.length) {
+			// If an IP is blocked *and* rangeblocked, only use whichever is more recent
+			var block = blocklist[0];
+			var message = (isIP ? 'This IP ' + (Morebits.ip.isRange(uid) ? 'range' : 'address') : 'This account') + ' is ' + (block.partial ? 'partially' : 'already') + ' blocked';
+			// Start and end differ, range blocked
+			message += block.rangestart !== block.rangeend ? ' as part of a rangeblock.' : '.';
+			if (block.partial) {
+				$('#twinkle-arv-blockwarning').css('color', 'black'); // Less severe
+			}
+			$('#twinkle-arv-blockwarning').text(message);
+		}
+	}).post();
+
 
 	// We must init the
 	var evt = document.createEvent('Event');
@@ -107,7 +150,7 @@ Twinkle.arv.callback.changeCategory = function (e) {
 			work_area.append({
 				type: 'input',
 				name: 'page',
-				label: 'Primary linked page: ',
+				label: 'Primary linked page:',
 				tooltip: 'Leave blank to not link to the page in the report',
 				value: mw.util.getParamValue('vanarticle') || '',
 				event: function(e) {
@@ -124,7 +167,7 @@ Twinkle.arv.callback.changeCategory = function (e) {
 			work_area.append({
 				type: 'input',
 				name: 'badid',
-				label: 'Revision ID for target page when vandalised: ',
+				label: 'Revision ID for target page when vandalised:',
 				tooltip: 'Leave blank for no diff link',
 				value: mw.util.getParamValue('vanarticlerevid') || '',
 				disabled: !mw.util.getParamValue('vanarticle'),
@@ -137,7 +180,7 @@ Twinkle.arv.callback.changeCategory = function (e) {
 			work_area.append({
 				type: 'input',
 				name: 'goodid',
-				label: 'Last good revision ID before vandalism of target page: ',
+				label: 'Last good revision ID before vandalism of target page:',
 				tooltip: 'Leave blank for diff link to previous revision',
 				value: mw.util.getParamValue('vanarticlegoodrevid') || '',
 				disabled: !mw.util.getParamValue('vanarticle') || mw.util.getParamValue('vanarticlerevid')
@@ -157,12 +200,12 @@ Twinkle.arv.callback.changeCategory = function (e) {
 					{
 						label: 'Evidently a vandalism-only account',
 						value: 'vandalonly',
-						disabled: mw.util.isIPAddress(root.uid.value)
+						disabled: mw.util.isIPAddress(root.uid.value, true)
 					},
 					{
 						label: 'Account is a promotion-only account',
 						value: 'promoonly',
-						disabled: mw.util.isIPAddress(root.uid.value)
+						disabled: mw.util.isIPAddress(root.uid.value, true)
 					},
 					{
 						label: 'Account is evidently a spambot or a compromised account',
@@ -173,7 +216,7 @@ Twinkle.arv.callback.changeCategory = function (e) {
 			work_area.append({
 				type: 'textarea',
 				name: 'reason',
-				label: 'Comment: '
+				label: 'Comment:'
 			});
 			work_area = work_area.render();
 			old_area.parentNode.replaceChild(work_area, old_area);
@@ -202,11 +245,6 @@ Twinkle.arv.callback.changeCategory = function (e) {
 						label: 'Promotional username',
 						value: 'promotional',
 						tooltip: 'Promotional usernames are advertisements for a company, website or group. Please do not report these names to UAA unless the user has also made promotional edits related to the name.'
-					},
-					{
-						label: 'Username that implies shared use',
-						value: 'shared',
-						tooltip: 'Usernames that imply the likelihood of shared use (names of companies or groups, or the names of posts within organizations) are not permitted. Usernames are acceptable if they contain a company or group name but are clearly intended to denote an individual person, such as "Mark at WidgetsUSA", "Jack Smith at the XY Foundation", "WidgetFan87", etc.'
 					},
 					{
 						label: 'Offensive username',
@@ -240,7 +278,7 @@ Twinkle.arv.callback.changeCategory = function (e) {
 					type: 'input',
 					name: 'sockmaster',
 					label: 'Sockpuppeteer',
-					tooltip: 'The username of the sockpuppeteer (sockmaster) without the User:-prefix'
+					tooltip: 'The username of the sockpuppeteer (sockmaster) without the "User:" prefix'
 				}
 			);
 			work_area.append({
@@ -256,11 +294,6 @@ Twinkle.arv.callback.changeCategory = function (e) {
 						label: 'Request CheckUser',
 						name: 'checkuser',
 						tooltip: 'CheckUser is a tool used to obtain technical evidence related to a sockpuppetry allegation. It will not be used without good cause, which you must clearly demonstrate. Make sure your evidence explains why using the tool is appropriate. It will not be used to publicly connect user accounts and IP addresses.'
-					},
-					{
-						label: 'Notify reported users',
-						name: 'notify',
-						tooltip: 'Notification is not mandatory. In many cases, especially of chronic sockpuppeteers, notification may be counterproductive. However, especially in less egregious cases involving users who have not been reported before, notification may make the cases fairer and also appear to be fairer in the eyes of the accused. Use your judgment.'
 					}
 				]
 			});
@@ -278,8 +311,8 @@ Twinkle.arv.callback.changeCategory = function (e) {
 					type: 'dyninput',
 					name: 'sockpuppet',
 					label: 'Sockpuppets',
-					sublabel: 'Sock: ',
-					tooltip: 'The username of the sockpuppet without the User:-prefix',
+					sublabel: 'Sock:',
+					tooltip: 'The username of the sockpuppet without the "User:" prefix',
 					min: 2
 				});
 			work_area.append({
@@ -294,10 +327,6 @@ Twinkle.arv.callback.changeCategory = function (e) {
 					label: 'Request CheckUser',
 					name: 'checkuser',
 					tooltip: 'CheckUser is a tool used to obtain technical evidence related to a sockpuppetry allegation. It will not be used without good cause, which you must clearly demonstrate. Make sure your evidence explains why using the tool is appropriate. It will not be used to publicly connect user accounts and IP addresses.'
-				}, {
-					label: 'Notify reported users',
-					name: 'notify',
-					tooltip: 'Notification is not mandatory. In many cases, especially of chronic sockpuppeteers, notification may be counterproductive. However, especially in less egregious cases involving users who have not been reported before, notification may make the cases fairer and also appear to be fairer in the eyes of the accused. Use your judgment.'
 				} ]
 			});
 			work_area = work_area.render();
@@ -338,51 +367,50 @@ Twinkle.arv.callback.changeCategory = function (e) {
 							rvend: date.toISOString(),
 							rvuser: rvuser,
 							indexpageids: true,
-							redirects: true,
 							titles: titles
 						}).done(function(data) {
 							var pageid = data.query.pageids[0];
 							var page = data.query.pages[pageid];
 							if (!page.revisions) {
 								$('<span class="entry">None found</span>').appendTo($field);
-								return;
-							}
-							for (var i = 0; i < page.revisions.length; ++i) {
-								var rev = page.revisions[i];
-								var $entry = $('<div/>', {
-									'class': 'entry'
-								});
-								var $input = $('<input/>', {
-									'type': 'checkbox',
-									'name': 's_' + field,
-									'value': rev.revid
-								});
-								$input.data('revinfo', rev);
-								$input.appendTo($entry);
-								var comment = '<span>';
-								// revdel/os
-								if (typeof rev.commenthidden === 'string') {
-									comment += '(comment hidden)';
-								} else {
-									comment += '"' + rev.parsedcomment + '"';
+							} else {
+								for (var i = 0; i < page.revisions.length; ++i) {
+									var rev = page.revisions[i];
+									var $entry = $('<div/>', {
+										class: 'entry'
+									});
+									var $input = $('<input/>', {
+										type: 'checkbox',
+										name: 's_' + field,
+										value: rev.revid
+									});
+									$input.data('revinfo', rev);
+									$input.appendTo($entry);
+									var comment = '<span>';
+									// revdel/os
+									if (typeof rev.commenthidden === 'string') {
+										comment += '(comment hidden)';
+									} else {
+										comment += '"' + rev.parsedcomment + '"';
+									}
+									comment += ' at <a href="' + mw.config.get('wgScript') + '?diff=' + rev.revid + '">' + new Morebits.date(rev.timestamp).calendar() + '</a></span>';
+									$entry.append(comment).appendTo($field);
 								}
-								comment += ' at <a href="' + mw.config.get('wgScript') + '?diff=' + rev.revid + '">' + new Morebits.date(rev.timestamp).calendar() + '</a></span>';
-								$entry.append(comment).appendTo($field);
 							}
 
 							// add free form input for resolves
 							if (field === 'resolves') {
 								var $free_entry = $('<div/>', {
-									'class': 'entry'
+									class: 'entry'
 								});
 								var $free_input = $('<input/>', {
-									'type': 'text',
-									'name': 's_resolves_free'
+									type: 'text',
+									name: 's_resolves_free'
 								});
 
 								var $free_label = $('<label/>', {
-									'for': 's_resolves_free',
-									'html': 'URL link of diff with additional discussions: '
+									for: 's_resolves_free',
+									html: 'URL link of diff with additional discussions: '
 								});
 								$free_entry.append($free_label).append($free_input).appendTo($field);
 							}
@@ -414,7 +442,7 @@ Twinkle.arv.callback.changeCategory = function (e) {
 			work_area.append({
 				type: 'field',
 				name: 'diffs',
-				label: 'User\'s reverts',
+				label: 'User\'s reverts (within last 48 hours)',
 				tooltip: 'Select the edits you believe are reverts'
 			});
 			work_area.append({
@@ -520,7 +548,7 @@ Twinkle.arv.callback.evaluate = function(e) {
 				var $aivLink = '<a target="_blank" href="/wiki/WP:AIV">WP:AIV</a>';
 
 				// check if user has already been reported
-				if (new RegExp('\\{\\{\\s*(?:(?:[Ii][Pp])?[Vv]andal|[Uu]serlinks)\\s*\\|\\s*(?:1=)?\\s*' + RegExp.escape(uid, true) + '\\s*\\}\\}').test(text)) {
+				if (new RegExp('\\{\\{\\s*(?:(?:[Ii][Pp])?[Vv]andal|[Uu]serlinks)\\s*\\|\\s*(?:1=)?\\s*' + Morebits.string.escapeRegExp(uid) + '\\s*\\}\\}').test(text)) {
 					aivPage.getStatusElement().error('Report already present, will not add a new one');
 					Morebits.status.printUserText(reason, 'The comments you typed are provided below, in case you wish to manually post them under the existing report for this user at ' + $aivLink + ':');
 					return;
@@ -532,7 +560,7 @@ Twinkle.arv.callback.evaluate = function(e) {
 					var tb2Text = tb2Page.getPageText();
 					var tb2statelem = tb2Page.getStatusElement();
 
-					if (new RegExp('\\{\\{\\s*(?:(?:[Ii][Pp])?[Vv]andal|[Uu]serlinks)\\s*\\|\\s*(?:1=)?\\s*' + RegExp.escape(uid, true) + '\\s*\\}\\}').test(tb2Text)) {
+					if (new RegExp('\\{\\{\\s*(?:(?:[Ii][Pp])?[Vv]andal|[Uu]serlinks)\\s*\\|\\s*(?:1=)?\\s*' + Morebits.string.escapeRegExp(uid) + '\\s*\\}\\}').test(tb2Text)) {
 						if (confirm('The user ' + uid + ' has already been reported by a bot. Do you wish to make the report anyway?')) {
 							tb2statelem.info('Proceeded despite bot report');
 						} else {
@@ -547,7 +575,7 @@ Twinkle.arv.callback.evaluate = function(e) {
 					aivPage.getStatusElement().status('Adding new report...');
 					aivPage.setEditSummary('Reporting [[Special:Contributions/' + uid + '|' + uid + ']].');
 					aivPage.setChangeTags(Twinkle.changeTags);
-					aivPage.setAppendText('\n*{{' + (mw.util.isIPAddress(uid) ? 'IPvandal' : 'vandal') + '|' + (/=/.test(uid) ? '1=' : '') + uid + '}} &ndash; ' + reason);
+					aivPage.setAppendText('\n*{{vandal|' + (/=/.test(uid) ? '1=' : '') + uid + '}} &ndash; ' + reason);
 					aivPage.append();
 				});
 			});
@@ -557,27 +585,31 @@ Twinkle.arv.callback.evaluate = function(e) {
 		case 'username':
 			types = form.getChecked('arvtype').map(Morebits.string.toLowerCaseFirstChar);
 
-			var hasShared = types.indexOf('shared') > -1;
-			if (hasShared) {
-				types.splice(types.indexOf('shared'), 1);
-			}
-
+			// generate human-readable string, e.g. "misleading and promotional username"
 			if (types.length <= 2) {
 				types = types.join(' and ');
 			} else {
 				types = [ types.slice(0, -1).join(', '), types.slice(-1) ].join(' and ');
 			}
-			var article = 'a';
+
+			// a or an?
+			var adjective = 'a';
 			if (/[aeiouwyh]/.test(types[0] || '')) { // non 100% correct, but whatever, including 'h' for Cockney
-				article = 'an';
+				adjective = 'an';
 			}
+
+			// generate wikicode to place on [[WP:UAA]] page
 			reason = '*{{user-uaa|1=' + uid + '}} &ndash; ';
-			if (types.length || hasShared) {
-				reason += 'Violation of the username policy as ' + article + ' ' + types + ' username' +
-					(hasShared ? ' that implies shared use. ' : '. ');
+			if (types.length) {
+				reason += 'Violation of the username policy as ' + adjective + ' ' + types + ' username. ';
 			}
 			if (comment !== '') {
-				reason += Morebits.string.toUpperCaseFirstChar(comment) + '. ';
+				reason += Morebits.string.toUpperCaseFirstChar(comment);
+				var endsInPeriod = /\.$/.test(comment);
+				if (!endsInPeriod) {
+					reason += '.';
+				}
+				reason += ' ';
 			}
 			reason += '~~~~';
 			reason = reason.replace(/\r?\n/g, '\n*:');  // indent newlines
@@ -595,7 +627,7 @@ Twinkle.arv.callback.evaluate = function(e) {
 				var text = uaaPage.getPageText();
 
 				// check if user has already been reported
-				if (new RegExp('\\{\\{\\s*user-uaa\\s*\\|\\s*(1\\s*=\\s*)?' + RegExp.escape(uid, true) + '\\s*(\\||\\})').test(text)) {
+				if (new RegExp('\\{\\{\\s*user-uaa\\s*\\|\\s*(1\\s*=\\s*)?' + Morebits.string.escapeRegExp(uid) + '\\s*(\\||\\})').test(text)) {
 					uaaPage.getStatusElement().error('User is already listed.');
 					var $uaaLink = '<a target="_blank" href="/wiki/WP:UAA">WP:UAA</a>';
 					Morebits.status.printUserText(reason, 'The comments you typed are provided below, in case you wish to manually post them under the existing report for this user at ' + $uaaLink + ':');
@@ -604,7 +636,9 @@ Twinkle.arv.callback.evaluate = function(e) {
 				uaaPage.getStatusElement().status('Adding new report...');
 				uaaPage.setEditSummary('Reporting [[Special:Contributions/' + uid + '|' + uid + ']].');
 				uaaPage.setChangeTags(Twinkle.changeTags);
-				uaaPage.setPageText(text + '\n' + reason);
+
+				// Blank newline per [[Special:Permalink/996949310#Spacing]]; see also [[WP:LISTGAP]] and [[WP:INDENTGAP]]
+				uaaPage.setPageText(text + '\n' + reason + '\n*');
 				uaaPage.save();
 			});
 			break;
@@ -615,8 +649,7 @@ Twinkle.arv.callback.evaluate = function(e) {
 		case 'puppet':
 			var sockParameters = {
 				evidence: form.evidence.value.trim(),
-				checkuser: form.checkuser.checked,
-				notify: form.notify.checked
+				checkuser: form.checkuser.checked
 			};
 
 			var puppetReport = form.category.value === 'puppet';
@@ -629,9 +662,9 @@ Twinkle.arv.callback.evaluate = function(e) {
 			}
 
 			sockParameters.uid = puppetReport ? form.sockmaster.value.trim() : uid;
-			sockParameters.sockpuppets = puppetReport ? [uid] : $.map($('input:text[name=sockpuppet]', form), function(o) {
+			sockParameters.sockpuppets = puppetReport ? [uid] : Morebits.array.uniq($.map($('input:text[name=sockpuppet]', form), function(o) {
 				return $(o).val() || null;
-			});
+			}));
 
 			Morebits.simpleWindow.setButtonsEnabled(false);
 			Morebits.status.init(form);
@@ -666,13 +699,13 @@ Twinkle.arv.callback.evaluate = function(e) {
 				}
 
 				var an3Parameters = {
-					'uid': uid,
-					'page': form.page.value.trim(),
-					'comment': form.comment.value.trim(),
-					'diffs': diffs,
-					'warnings': warnings,
-					'resolves': resolves,
-					'free_resolves': free_resolves
+					uid: uid,
+					page: form.page.value.trim(),
+					comment: form.comment.value.trim(),
+					diffs: diffs,
+					warnings: warnings,
+					resolves: resolves,
+					free_resolves: free_resolves
 				};
 
 				Morebits.simpleWindow.setButtonsEnabled(false);
@@ -775,52 +808,11 @@ Twinkle.arv.callback.evaluate = function(e) {
 Twinkle.arv.processSock = function(params) {
 	Morebits.wiki.addCheckpoint(); // prevent notification events from causing an erronous "action completed"
 
-	// notify all user accounts if requested
-	if (params.notify && params.sockpuppets.length > 0) {
-
-		var notifyEditSummary = 'Notifying about suspicion of sockpuppeteering.';
-		var notifyText = '\n\n{{subst:socksuspectnotice|1=' + params.uid + '}} ~~~~';
-
-		// notify user's master account
-		var masterTalkPage = new Morebits.wiki.page('User talk:' + params.uid, 'Notifying suspected sockpuppeteer');
-		masterTalkPage.setFollowRedirect(true);
-		masterTalkPage.setEditSummary(notifyEditSummary);
-		masterTalkPage.setChangeTags(Twinkle.changeTags);
-		masterTalkPage.setAppendText(notifyText);
-		masterTalkPage.append();
-
-		var statusIndicator = new Morebits.status('Notifying suspected sockpuppets', '0%');
-		var total = params.sockpuppets.length;
-		var current = 0;
-
-		// display status of notifications as they progress
-		var onSuccess = function(sockTalkPage) {
-			var now = parseInt(100 * ++current / total, 10) + '%';
-			statusIndicator.update(now);
-			sockTalkPage.getStatusElement().unlink();
-			if (current >= total) {
-				statusIndicator.info(now + ' (completed)');
-			}
-		};
-
-		var socks = params.sockpuppets;
-
-		// notify each puppet account
-		for (var i = 0; i < socks.length; ++i) {
-			var sockTalkPage = new Morebits.wiki.page('User talk:' + socks[i], 'Notification for ' + socks[i]);
-			sockTalkPage.setFollowRedirect(true);
-			sockTalkPage.setEditSummary(notifyEditSummary);
-			sockTalkPage.setChangeTags(Twinkle.changeTags);
-			sockTalkPage.setAppendText(notifyText);
-			sockTalkPage.append(onSuccess);
-		}
-	}
-
 	// prepare the SPI report
-	var text = '\n\n{{subst:SPI report|socksraw=' +
-		params.sockpuppets.map(function(v) {
-			return '* {{' + (mw.util.isIPAddress(v) ? 'checkip' : 'checkuser') + '|1=' + v + '}}';
-		}).join('\n') + '\n|evidence=' + params.evidence + ' \n';
+	var text = '\n{{subst:SPI report|' +
+		params.sockpuppets.map(function(sock, index) {
+			return (index + 1) + '=' + sock;
+		}).join('|') + '\n|evidence=' + params.evidence + ' \n';
 
 	if (params.checkuser) {
 		text += '|checkuser=yes';
@@ -837,17 +829,7 @@ Twinkle.arv.processSock = function(params) {
 	spiPage.setEditSummary('Adding new report for [[Special:Contributions/' + params.uid + '|' + params.uid + ']].');
 	spiPage.setChangeTags(Twinkle.changeTags);
 	spiPage.setAppendText(text);
-	switch (Twinkle.getPref('spiWatchReport')) {
-		case 'yes':
-			spiPage.setWatchlist(true);
-			break;
-		case 'no':
-			spiPage.setWatchlistFromPreferences(false);
-			break;
-		default:
-			spiPage.setWatchlistFromPreferences(true);
-			break;
-	}
+	spiPage.setWatchlist(Twinkle.getPref('spiWatchReport'));
 	spiPage.append();
 
 	Morebits.wiki.removeCheckpoint();  // all page updates have been started
@@ -871,7 +853,6 @@ Twinkle.arv.processAN3 = function(params) {
 		rvstartid: minid,
 		rvexcludeuser: params.uid,
 		indexpageids: true,
-		redirects: true,
 		titles: params.page
 	}).done(function(data) {
 		Morebits.wiki.addCheckpoint(); // prevent notification events from causing an erronous "action completed"

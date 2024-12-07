@@ -26,7 +26,7 @@ Twinkle.speedy = function twinklespeedy() {
 		return;
 	}
 
-	Twinkle.addPortletLink(Twinkle.speedy.callback, 'CSD', 'tw-csd', Morebits.userIsSysop ? 'Delete page according to WP:CSD' : 'Request speedy deletion according to WP:CSD');
+	Twinkle.addPortletLink(Twinkle.speedy.callback, 'CSD', 'tw-csd', Morebits.userIsSysop ? 'Delete page according to COM:CSD' : 'Request speedy deletion according to COM:CSD');
 };
 
 // This function is run when the CSD tab/header link is clicked
@@ -39,43 +39,6 @@ Twinkle.speedy.dialog = null;
 // Used throughout
 Twinkle.speedy.hasCSD = !!$('#delete-reason').length;
 
-// The speedy criteria list can be in one of several modes
-Twinkle.speedy.mode = {
-	sysopSingleSubmit: 1,  // radio buttons, no subgroups, submit when "Submit" button is clicked
-	sysopRadioClick: 2,  // radio buttons, no subgroups, submit when a radio button is clicked
-	sysopMultipleSubmit: 3, // check boxes, subgroups, "Submit" button already present
-	sysopMultipleRadioClick: 4, // check boxes, subgroups, need to add a "Submit" button
-	userMultipleSubmit: 5,  // check boxes, subgroups, "Submit" button already pressent
-	userMultipleRadioClick: 6,  // check boxes, subgroups, need to add a "Submit" button
-	userSingleSubmit: 7,  // radio buttons, subgroups, submit when "Submit" button is clicked
-	userSingleRadioClick: 8,  // radio buttons, subgroups, submit when a radio button is clicked
-
-	// are we in "delete page" mode?
-	// (sysops can access both "delete page" [sysop] and "tag page only" [user] modes)
-	isSysop: function twinklespeedyModeIsSysop(mode) {
-		return mode === Twinkle.speedy.mode.sysopSingleSubmit ||
-			mode === Twinkle.speedy.mode.sysopMultipleSubmit ||
-			mode === Twinkle.speedy.mode.sysopRadioClick ||
-			mode === Twinkle.speedy.mode.sysopMultipleRadioClick;
-	},
-	// do we have a "Submit" button once the form is created?
-	hasSubmitButton: function twinklespeedyModeHasSubmitButton(mode) {
-		return mode === Twinkle.speedy.mode.sysopSingleSubmit ||
-			mode === Twinkle.speedy.mode.sysopMultipleSubmit ||
-			mode === Twinkle.speedy.mode.sysopMultipleRadioClick ||
-			mode === Twinkle.speedy.mode.userMultipleSubmit ||
-			mode === Twinkle.speedy.mode.userMultipleRadioClick ||
-			mode === Twinkle.speedy.mode.userSingleSubmit;
-	},
-	// is db-multiple the outcome here?
-	isMultiple: function twinklespeedyModeIsMultiple(mode) {
-		return mode === Twinkle.speedy.mode.userMultipleSubmit ||
-			mode === Twinkle.speedy.mode.sysopMultipleSubmit ||
-			mode === Twinkle.speedy.mode.userMultipleRadioClick ||
-			mode === Twinkle.speedy.mode.sysopMultipleRadioClick;
-	}
-};
-
 // Prepares the speedy deletion dialog and displays it
 Twinkle.speedy.initDialog = function twinklespeedyInitDialog(callbackfunc) {
 	var dialog;
@@ -83,8 +46,10 @@ Twinkle.speedy.initDialog = function twinklespeedyInitDialog(callbackfunc) {
 	dialog = Twinkle.speedy.dialog;
 	dialog.setTitle('Choose criteria for speedy deletion');
 	dialog.setScriptName('Twinkle');
-	dialog.addFooterLink('Speedy deletion policy', 'WP:CSD');
-	dialog.addFooterLink('Twinkle help', 'WP:TW/DOC#speedy');
+	dialog.addFooterLink('Speedy deletion policy', 'COM:CSD');
+	dialog.addFooterLink('CSD prefs', 'Commons:Twinkle/Preferences#speedy');
+	dialog.addFooterLink('Twinkle help', 'Commons:Twinkle/Documentation#speedy');
+	dialog.addFooterLink('Give feedback', 'Commons talk:Twinkle');
 
 	var form = new Morebits.quickForm(callbackfunc, Twinkle.getPref('speedySelectionStyle') === 'radioClick' ? 'change' : null);
 	if (Morebits.userIsSysop) {
@@ -115,7 +80,7 @@ Twinkle.speedy.initDialog = function twinklespeedyInitDialog(callbackfunc) {
 						// enable multiple
 						cForm.multiple.checked = false;
 						// enable requesting creation protection
-						cForm.salting.checked = false;
+						// cForm.salting.checked = false;
 
 						Twinkle.speedy.callback.modeChanged(cForm);
 
@@ -159,15 +124,10 @@ Twinkle.speedy.initDialog = function twinklespeedyInitDialog(callbackfunc) {
 					name: 'redirects',
 					tooltip: 'This option deletes all incoming redirects in addition. Avoid this option for procedural (e.g. move/merge) deletions.',
 					checked: Twinkle.getPref('deleteRedirectsOnDelete'),
-					event: function(event) {
+					event: function (event) {
 						event.stopPropagation();
 					}
-				}
-			]
-		});
-		deleteOptions.append({
-			type: 'checkbox',
-			list: [
+				},
 				{
 					label: 'Delete under multiple criteria',
 					value: 'delmultiple',
@@ -177,12 +137,7 @@ Twinkle.speedy.initDialog = function twinklespeedyInitDialog(callbackfunc) {
 						Twinkle.speedy.callback.modeChanged(event.target.form);
 						event.stopPropagation();
 					}
-				}
-			]
-		});
-		deleteOptions.append({
-			type: 'checkbox',
-			list: [
+				},
 				{
 					label: 'Notify page creator of page deletion',
 					value: 'warnusertalk',
@@ -223,26 +178,16 @@ Twinkle.speedy.initDialog = function twinklespeedyInitDialog(callbackfunc) {
 				event: function(event) {
 					event.stopPropagation();
 				}
-			}
-		]
-	});
-	tagOptions.append({
-		type: 'checkbox',
-		list: [
-			{
-				label: 'Tag for creation protection (salting) as well',
-				value: 'salting',
-				name: 'salting',
-				tooltip: 'When selected, the speedy deletion tag will be accompanied by a {{salt}} tag requesting that the deleting administrator apply creation protection. Only select if this page has been repeatedly recreated.',
-				event: function(event) {
-					event.stopPropagation();
-				}
-			}
-		]
-	});
-	tagOptions.append({
-		type: 'checkbox',
-		list: [
+			},
+			// {
+			// 	label: 'Tag for creation protection (salting) as well',
+			// 	value: 'salting',
+			// 	name: 'salting',
+			// 	tooltip: 'When selected, the speedy deletion tag will be accompanied by a {{salt}} tag requesting that the deleting administrator apply creation protection. Only select if this page has been repeatedly recreated.',
+			// 	event: function(event) {
+			// 		event.stopPropagation();
+			// 	}
+			// },
 			{
 				label: 'Tag with multiple criteria',
 				value: 'multiple',
@@ -254,6 +199,12 @@ Twinkle.speedy.initDialog = function twinklespeedyInitDialog(callbackfunc) {
 				}
 			}
 		]
+	});
+
+	form.append({
+		type: 'div',
+		id: 'prior-deletion-count',
+		style: 'font-style: italic'
 	});
 
 	form.append({
@@ -271,38 +222,22 @@ Twinkle.speedy.initDialog = function twinklespeedyInitDialog(callbackfunc) {
 	dialog.display();
 
 	Twinkle.speedy.callback.modeChanged(result);
-};
 
-Twinkle.speedy.callback.getMode = function twinklespeedyCallbackGetMode(form) {
-	var mode = Twinkle.speedy.mode.userSingleSubmit;
-	if (form.tag_only && !form.tag_only.checked) {
-		if (form.delmultiple.checked) {
-			mode = Twinkle.speedy.mode.sysopMultipleSubmit;
-		} else {
-			mode = Twinkle.speedy.mode.sysopSingleSubmit;
-		}
-	} else {
-		if (form.multiple.checked) {
-			mode = Twinkle.speedy.mode.userMultipleSubmit;
-		} else {
-			mode = Twinkle.speedy.mode.userSingleSubmit;
-		}
-	}
-	if (Twinkle.getPref('speedySelectionStyle') === 'radioClick') {
-		mode++;
-	}
-
-	return mode;
+	// Check for prior deletions.  Just once, upon init
+	Twinkle.speedy.callback.priorDeletionCount();
 };
 
 Twinkle.speedy.callback.modeChanged = function twinklespeedyCallbackModeChanged(form) {
 	var namespace = mw.config.get('wgNamespaceNumber');
 
 	// first figure out what mode we're in
-	var mode = Twinkle.speedy.callback.getMode(form);
-	var isSysopMode = Twinkle.speedy.mode.isSysop(mode);
+	var mode = {
+		isSysop: !!form.tag_only && !form.tag_only.checked,
+		isMultiple: form.tag_only && !form.tag_only.checked ? form.delmultiple.checked : form.multiple.checked,
+		isRadioClick: Twinkle.getPref('speedySelectionStyle') === 'radioClick'
+	};
 
-	if (isSysopMode) {
+	if (mode.isSysop) {
 		$('[name=delete_options]').show();
 		$('[name=tag_options]').hide();
 		$('button.tw-speedy-submit').text('Delete page');
@@ -317,8 +252,8 @@ Twinkle.speedy.callback.modeChanged = function twinklespeedyCallbackModeChanged(
 		name: 'work_area'
 	});
 
-	if (mode === Twinkle.speedy.mode.userMultipleRadioClick || mode === Twinkle.speedy.mode.sysopMultipleRadioClick) {
-		var evaluateType = isSysopMode ? 'evaluateSysop' : 'evaluateUser';
+	if (mode.isMultiple && mode.isRadioClick) {
+		var evaluateType = mode.isSysop ? 'evaluateSysop' : 'evaluateUser';
 
 		work_area.append({
 			type: 'div',
@@ -327,7 +262,7 @@ Twinkle.speedy.callback.modeChanged = function twinklespeedyCallbackModeChanged(
 		work_area.append({
 			type: 'button',
 			name: 'submit-multiple',
-			label: isSysopMode ? 'Delete page' : 'Tag page',
+			label: mode.isSysop ? 'Delete page' : 'Tag page',
 			event: function(event) {
 				Twinkle.speedy.callback[evaluateType](event);
 				event.stopPropagation();
@@ -335,86 +270,81 @@ Twinkle.speedy.callback.modeChanged = function twinklespeedyCallbackModeChanged(
 		});
 	}
 
-	var radioOrCheckbox = Twinkle.speedy.mode.isMultiple(mode) ? 'checkbox' : 'radio';
+	var appendList = function(headerLabel, csdList) {
+		work_area.append({ type: 'header', label: headerLabel });
+		work_area.append({ type: mode.isMultiple ? 'checkbox' : 'radio', name: 'csd', list: Twinkle.speedy.generateCsdList(csdList, mode) });
+	};
 
-	if (isSysopMode && !Twinkle.speedy.mode.isMultiple(mode)) {
-		work_area.append({ type: 'header', label: 'Custom rationale' });
-		work_area.append({ type: radioOrCheckbox, name: 'csd', list: Twinkle.speedy.generateCsdList(Twinkle.speedy.customRationale, mode) });
+	if (mode.isSysop && !mode.isMultiple) {
+		appendList('Custom rationale', Twinkle.speedy.customRationale);
 	}
 
 	if (namespace % 2 === 1 && namespace !== 3) {
 		// show db-talk on talk pages, but not user talk pages
-		work_area.append({ type: 'header', label: 'Talk pages' });
-		work_area.append({ type: radioOrCheckbox, name: 'csd', list: Twinkle.speedy.generateCsdList(Twinkle.speedy.talkList, mode) });
+		appendList('Talk pages', Twinkle.speedy.talkList);
 	}
 
-	if (!mw.config.get('wgIsRedirect')) {
+	if (!Morebits.isPageRedirect()) {
 		switch (namespace) {
-			case 0:  // article
+			case 0:  // gallery
 			case 1:  // talk
-				work_area.append({ type: 'header', label: 'Articles' });
-				work_area.append({ type: radioOrCheckbox, name: 'csd', list: Twinkle.speedy.generateCsdList(Twinkle.speedy.articleList, mode) });
+				appendList('Galleries', Twinkle.speedy.galleryList);
 				break;
 
 			case 2:  // user
 			case 3:  // user talk
-				work_area.append({ type: 'header', label: 'User pages' });
-				work_area.append({ type: radioOrCheckbox, name: 'csd', list: Twinkle.speedy.generateCsdList(Twinkle.speedy.userList, mode) });
+				appendList('User pages', Twinkle.speedy.userList);
+				break;
+
+			case 4:  // Commons
+			case 5:  // Commons talk
+				appendList('Commons', Twinkle.speedy.commonsList);
 				break;
 
 			case 6:  // file
 			case 7:  // file talk
-				work_area.append({ type: 'header', label: 'Files' });
-				work_area.append({ type: radioOrCheckbox, name: 'csd', list: Twinkle.speedy.generateCsdList(Twinkle.speedy.fileList, mode) });
-				if (!isSysopMode) {
-					work_area.append({ type: 'div', label: 'Tagging for CSD F4 (no license), F5 (orphaned fair use), F6 (no fair use rationale), and F11 (no permission) can be done using Twinkle\'s "DI" tab.' });
+				appendList('Files', Twinkle.speedy.fileList);
+				if (!mode.isSysop) {
+					work_area.append({ type: 'div', label: 'Tagging for CSD F5 (no license/source/permission) can be done using Twinkle\'s "DI" tab.' });
 				}
 				break;
 
-			case 10:  // template
-			case 11:  // template talk
-				work_area.append({ type: 'header', label: 'Templates' });
-				work_area.append({ type: radioOrCheckbox, name: 'csd', list: Twinkle.speedy.generateCsdList(Twinkle.speedy.templateList, mode) });
+			case 10:  // file
+			case 11:  // file talk
+				appendList('Template', Twinkle.speedy.templateList);
 				break;
 
 			case 14:  // category
 			case 15:  // category talk
-				work_area.append({ type: 'header', label: 'Categories' });
-				work_area.append({ type: radioOrCheckbox, name: 'csd', list: Twinkle.speedy.generateCsdList(Twinkle.speedy.categoryList, mode) });
-				break;
-
-			case 100:  // portal
-			case 101:  // portal talk
-				work_area.append({ type: 'header', label: 'Portals' });
-				work_area.append({ type: radioOrCheckbox, name: 'csd', list: Twinkle.speedy.generateCsdList(Twinkle.speedy.portalList, mode) });
+				appendList('Categories', Twinkle.speedy.categoryList);
 				break;
 
 			default:
 				break;
 		}
+		if (namespace % 2 === 1 && namespace !== 3) {
+			appendList('Talk pages', Twinkle.speedy.talkList);
+		}
 	} else {
 		if (namespace === 2 || namespace === 3) {
-			work_area.append({ type: 'header', label: 'User pages' });
-			work_area.append({ type: radioOrCheckbox, name: 'csd', list: Twinkle.speedy.generateCsdList(Twinkle.speedy.userList, mode) });
+			appendList('User pages', Twinkle.speedy.userList);
 		}
-		work_area.append({ type: 'header', label: 'Redirects' });
-		work_area.append({ type: radioOrCheckbox, name: 'csd', list: Twinkle.speedy.generateCsdList(Twinkle.speedy.redirectList, mode) });
+		appendList('Redirects', Twinkle.speedy.redirectList);
 	}
 
 	var generalCriteria = Twinkle.speedy.generalList;
 
 	// custom rationale lives under general criteria when tagging
-	if (!isSysopMode) {
+	if (!mode.isSysop) {
 		generalCriteria = Twinkle.speedy.customRationale.concat(generalCriteria);
 	}
-	work_area.append({ type: 'header', label: 'General criteria' });
-	work_area.append({ type: radioOrCheckbox, name: 'csd', list: Twinkle.speedy.generateCsdList(generalCriteria, mode) });
+	appendList('General criteria', generalCriteria);
 
 	var old_area = Morebits.quickForm.getElements(form, 'work_area')[0];
 	form.replaceChild(work_area.render(), old_area);
 
 	// if sysop, check if CSD is already on the page and fill in custom rationale
-	if (isSysopMode && Twinkle.speedy.hasCSD) {
+	if (mode.isSysop && Twinkle.speedy.hasCSD) {
 		var customOption = $('input[name=csd][value=reason]')[0];
 		if (customOption) {
 			if (Twinkle.getPref('speedySelectionStyle') !== 'radioClick') {
@@ -422,16 +352,54 @@ Twinkle.speedy.callback.modeChanged = function twinklespeedyCallbackModeChanged(
 				customOption.click();
 				customOption.parentNode.appendChild(customOption.subgroup);
 			}
-			customOption.subgroup.querySelector('input').value = decodeURIComponent($('#delete-reason').text()).replace(/\+/g, ' ');
+			customOption.subgroup.querySelector('input').value = decodeURIComponent($('#delete-reason').text()).replace(/\+/g, ' ').replace(/CSD ([A-Z]{1,3}\d{1,2})/, '[[COM:CSD#$1|CSD $1]]');
 		}
 	}
 };
 
+Twinkle.speedy.callback.priorDeletionCount = function () {
+	var query = {
+		action: 'query',
+		format: 'json',
+		list: 'logevents',
+		letype: 'delete',
+		leaction: 'delete/delete', // Just pure page deletion, no redirect overwrites or revdel
+		letitle: mw.config.get('wgPageName'),
+		leprop: '', // We're just counting we don't actually care about the entries
+		lelimit: 5  // A little bit goes a long way
+	};
+
+	new Morebits.wiki.api('Checking for past deletions', query, function(apiobj) {
+		var response = apiobj.getResponse();
+		var delCount = response.query.logevents.length;
+		if (delCount) {
+			var message = delCount + ' previous deletion';
+			if (delCount > 1) {
+				message += 's';
+				if (response.continue) {
+					message = 'More than ' + message;
+				}
+
+				// 3+ seems problematic
+				if (delCount >= 3) {
+					$('#prior-deletion-count').css('color', 'red');
+				}
+			}
+
+			// Provide a link to page logs (CSD templates have one for sysops)
+			var link = Morebits.htmlNode('a', '(logs)');
+			link.setAttribute('href', mw.util.getUrl('Special:Log', {page: mw.config.get('wgPageName')}));
+			link.setAttribute('target', '_blank');
+
+			$('#prior-deletion-count').text(message + ' '); // Space before log link
+			$('#prior-deletion-count').append(link);
+		}
+	}).post();
+};
+
+
 Twinkle.speedy.generateCsdList = function twinklespeedyGenerateCsdList(list, mode) {
-	// mode switches
-	var isSysopMode = Twinkle.speedy.mode.isSysop(mode);
-	var multiple = Twinkle.speedy.mode.isMultiple(mode);
-	var hasSubmitButton = Twinkle.speedy.mode.hasSubmitButton(mode);
+
 	var pageNamespace = mw.config.get('wgNamespaceNumber');
 
 	var openSubgroupHandler = function(e) {
@@ -442,7 +410,7 @@ Twinkle.speedy.generateCsdList = function twinklespeedyGenerateCsdList(list, mod
 		e.stopPropagation();
 	};
 	var submitSubgroupHandler = function(e) {
-		var evaluateType = Twinkle.speedy.mode.isSysop(mode) ? 'evaluateSysop' : 'evaluateUser';
+		var evaluateType = mode.isSysop ? 'evaluateSysop' : 'evaluateUser';
 		Twinkle.speedy.callback[evaluateType](e);
 		e.stopPropagation();
 	};
@@ -450,7 +418,7 @@ Twinkle.speedy.generateCsdList = function twinklespeedyGenerateCsdList(list, mod
 	return $.map(list, function(critElement) {
 		var criterion = $.extend({}, critElement);
 
-		if (multiple) {
+		if (mode.isMultiple) {
 			if (criterion.hideWhenMultiple) {
 				return null;
 			}
@@ -466,7 +434,7 @@ Twinkle.speedy.generateCsdList = function twinklespeedyGenerateCsdList(list, mod
 			}
 		}
 
-		if (isSysopMode) {
+		if (mode.isSysop) {
 			if (criterion.hideWhenSysop) {
 				return null;
 			}
@@ -482,7 +450,7 @@ Twinkle.speedy.generateCsdList = function twinklespeedyGenerateCsdList(list, mod
 			}
 		}
 
-		if (mw.config.get('wgIsRedirect') && criterion.hideWhenRedirect) {
+		if (Morebits.isPageRedirect() && criterion.hideWhenRedirect) {
 			return null;
 		}
 
@@ -493,12 +461,12 @@ Twinkle.speedy.generateCsdList = function twinklespeedyGenerateCsdList(list, mod
 			return null;
 		}
 
-		if (criterion.subgroup && !hasSubmitButton) {
+		if (criterion.subgroup && !mode.isMultiple && mode.isRadioClick) {
 			if (Array.isArray(criterion.subgroup)) {
 				criterion.subgroup = criterion.subgroup.concat({
 					type: 'button',
 					name: 'submit',
-					label: isSysopMode ? 'Delete page' : 'Tag page',
+					label: mode.isSysop ? 'Delete page' : 'Tag page',
 					event: submitSubgroupHandler
 				});
 			} else {
@@ -507,7 +475,7 @@ Twinkle.speedy.generateCsdList = function twinklespeedyGenerateCsdList(list, mod
 					{
 						type: 'button',
 						name: 'submit',  // ends up being called "csd.submit" so this is OK
-						label: isSysopMode ? 'Delete page' : 'Tag page',
+						label: mode.isSysop ? 'Delete page' : 'Tag page',
 						event: submitSubgroupHandler
 					}
 				];
@@ -528,7 +496,7 @@ Twinkle.speedy.customRationale = [
 		subgroup: {
 			name: 'reason_1',
 			type: 'input',
-			label: 'Rationale: ',
+			label: 'Rationale:',
 			size: 60
 		},
 		hideWhenMultiple: true
@@ -545,99 +513,25 @@ Twinkle.speedy.talkList = [
 
 Twinkle.speedy.fileList = [
 	{
-		label: 'F1: Redundant file',
-		value: 'redundantimage',
-		tooltip: 'Any file that is a redundant copy, in the same file format and same or lower resolution, of something else on Wikipedia. Likewise, other media that is a redundant copy, in the same format and of the same or lower quality. This does not apply to files duplicated on Wikimedia Commons, because of licence issues; these should be tagged with {{subst:ncd|Image:newname.ext}} or {{subst:ncd}} instead',
-		subgroup: {
-			name: 'redundantimage_filename',
-			type: 'input',
-			label: 'File this is redundant to: ',
-			tooltip: 'The "File:" prefix can be left off.'
-		}
-	},
-	{
-		label: 'F2: Corrupt, mising, or empty file',
-		value: 'noimage',
-		tooltip: 'Before deleting this type of file, verify that the MediaWiki engine cannot read it by previewing a resized thumbnail of it. This also includes empty (i.e., no content) file description pages for Commons files'
-	},
-	{
-		label: 'F2: Unneeded file description page for a file on Commons',
-		value: 'fpcfail',
-		tooltip: 'An image, hosted on Commons, but with tags or information on its English Wikipedia description page that are no longer needed. (For example, a failed featured picture candidate.)',
-		hideWhenMultiple: true
-	},
-	{
-		label: 'F3: Improper license',
-		value: 'noncom',
-		tooltip: 'Files licensed as "for non-commercial use only", "non-derivative use" or "used with permission" that were uploaded on or after 2005-05-19, except where they have been shown to comply with the limited standards for the use of non-free content. This includes files licensed under a "Non-commercial Creative Commons License". Such files uploaded before 2005-05-19 may also be speedily deleted if they are not used in any articles'
-	},
-	{
-		label: 'F4: Lack of licensing information',
-		value: 'unksource',
-		tooltip: 'Files in category "Files with unknown source", "Files with unknown copyright status", or "Files with no copyright tag" that have been tagged with a template that places them in the category for more than seven days, regardless of when uploaded. Note, users sometimes specify their source in the upload summary, so be sure to check the circumstances of the file.',
-		hideWhenUser: true
-	},
-	{
-		label: 'F5: Unused non-free copyrighted file',
-		value: 'f5',
-		tooltip: 'Files that are not under a free license or in the public domain that are not used in any article, whose only use is in a deleted article, and that are very unlikely to be used on any other article. Reasonable exceptions may be made for files uploaded for an upcoming article. For other unused non-free files, use the "Orphaned fair use" option in Twinkle\'s DI tab.',
-		hideWhenUser: true
-	},
-	{
-		label: 'F6: Missing fair-use rationale',
-		value: 'norat',
-		tooltip: 'Any file without a fair use rationale may be deleted seven days after it is uploaded.  Boilerplate fair use templates do not constitute a fair use rationale.  Files uploaded before 2006-05-04 should not be deleted immediately; instead, the uploader should be notified that a fair-use rationale is needed.  Files uploaded after 2006-05-04 can be tagged using the "No fair use rationale" option in Twinkle\'s DI module. Such files can be found in the dated subcategories of Category:Files with no fair use rationale.',
-		hideWhenUser: true
-	},
-	{
-		label: 'F7: Clearly invalid fair-use tag',
-		value: 'badfairuse',  // same as below
-		tooltip: 'This is only for files with a clearly invalid fair-use tag, such as a {{Non-free logo}} tag on a photograph of a mascot. For cases that require a waiting period (replaceable images or otherwise disputed rationales), use the options on Twinkle\'s DI tab.',
-		subgroup: {
-			name: 'badfairuse_rationale',
-			type: 'input',
-			label: 'Optional explanation: ',
-			size: 60
-		}
-	},
-	{
-		label: 'F7: Fair-use media from a commercial image agency which is not the subject of sourced commentary',
-		value: 'badfairuse',  // same as above
-		tooltip: 'Non-free images or media from a commercial source (e.g., Associated Press, Getty), where the file itself is not the subject of sourced commentary, are considered an invalid claim of fair use and fail the strict requirements of WP:NFCC.',
-		subgroup: {
-			name: 'badfairuse_rationale',
-			type: 'input',
-			label: 'Optional explanation: ',
-			size: 60
-		},
-		hideWhenMultiple: true
-	},
-	{
-		label: 'F8: File available as an identical or higher-resolution copy on Wikimedia Commons',
-		value: 'commons',
-		tooltip: 'Provided the following conditions are met: 1: The file format of both images is the same. 2: The file\'s license and source status is beyond reasonable doubt, and the license is undoubtedly accepted at Commons. 3: All information on the file description page is present on the Commons file description page. That includes the complete upload history with links to the uploader\'s local user pages. 4: The file is not protected, and the file description page does not contain a request not to move it to Commons. 5: If the file is available on Commons under a different name than locally, all local references to the file must be updated to point to the title used at Commons. 6: For {{c-uploaded}} files: They may be speedily deleted as soon as they are off the Main Page',
-		subgroup: {
-			name: 'commons_filename',
-			type: 'input',
-			label: 'Filename on Commons: ',
-			value: Morebits.pageNameNorm,
-			tooltip: 'This can be left blank if the file has the same name on Commons as here. The "File:" prefix is optional.'
-		},
-		hideWhenMultiple: true
-	},
-	{
-		label: 'F9: Unambiguous copyright infringement',
-		value: 'imgcopyvio',
-		tooltip: 'The file was copied from a website or other source that does not have a license compatible with Wikipedia, and the uploader neither claims fair use nor makes a credible assertion of permission of free use. Sources that do not have a license compatible with Wikipedia include stock photo libraries such as Getty Images or Corbis. Non-blatant copyright infringements should be discussed at Wikipedia:Files for deletion',
+		label: 'F1: Clear copyright violation',
+		value: 'copyvio',
+		code: 'f1',
+		tooltip:
+			'Content is a clear copyright violation, with evidence that no Commons-compatible licensing has been issued by the copyright holder. This does not apply whenever there is a reasonable possibility of discovering that the work is public domain through further research or a plausible argument that it is below the threshold of originality.',
 		subgroup: [
 			{
 				name: 'imgcopyvio_url',
+				parameter: 'source',
+				utparam: '3',
 				type: 'input',
-				label: 'URL of the copyvio, including the "http://".  If the copyvio is of a non-internet source and you cannot provide a URL, you must use the deletion rationale box. ',
+				label:
+					'URL of the copyvio, including the "http://".  If the copyvio is of a non-internet source and you cannot provide a URL, you must use the deletion rationale box. ',
 				size: 60
 			},
 			{
 				name: 'imgcopyvio_rationale',
+				parameter: '1',
+				utparam: '2',
 				type: 'input',
 				label: 'Deletion rationale for non-internet copyvios: ',
 				size: 60
@@ -645,520 +539,458 @@ Twinkle.speedy.fileList = [
 		]
 	},
 	{
-		label: 'F10: Useless non-media file',
-		value: 'badfiletype',
-		tooltip: 'Files uploaded that are neither image, sound, nor video files (e.g. .doc, .pdf, or .xls files) which are not used in any article and have no foreseeable encyclopedic use'
+		label: 'F1: Logo clearly above Threshold of Originality',
+		value: 'logo',
+		code: 'f1',
+		tooltip:
+			'Content is a logo clearly above Threshold of Originality, either in the United States or its source country. If plausibly under the threshold of originality, file a Deletion Request instead.'
 	},
 	{
-		label: 'F11: No evidence of permission',
-		value: 'nopermission',
-		tooltip: 'If an uploader has specified a license and has named a third party as the source/copyright holder without providing evidence that this third party has in fact agreed, the item may be deleted seven days after notification of the uploader',
-		hideWhenUser: true
+		label: 'F2: Fair use content',
+		value: 'fairuse',
+		code: 'f2',
+		tooltip:
+			'Fair use content. Such content is not allowed on Wikimedia Commons and is subjected to speedy deletion.',
+		subgroup: {
+			name: 'fairuse_rationale',
+			parameter: '2',
+			utparam: '2',
+			type: 'input',
+			label: 'Optional explanation: ',
+			size: 60
+		}
 	},
 	{
-		label: 'G8: File description page with no corresponding file',
-		value: 'imagepage',
-		tooltip: 'This is only for use when the file doesn\'t exist at all. Corrupt files, and local description pages for files on Commons, should use F2; implausible redirects should use R3; and broken Commons redirects should use R4.'
+		label: 'F3: Derivative work of non-free content',
+		value: 'deriv',
+		code: 'f3',
+		tooltip:
+			'Derivative works based on non-free content (such as screenshots of non-free content). This does not apply to photographs taken in a public place, though the photograph itself remains subject to the other speedy criteria if its authorship is in question. Given the complexity of copyright rules like freedom of panorama and de minimis, it is best for such issues to be resolved in a formal deletion request.',
+		subgroup: {
+			name: 'deriv_rationale',
+			parameter: '2',
+			utparam: '2',
+			type: 'input',
+			label: 'Optional explanation: ',
+			size: 60
+		}
+	},
+	{
+		label: 'F4: Failed license review',
+		value: 'lrfailed',
+		code: 'f4',
+		tooltip:
+			'The file has been reviewed by a License Reviewer (or administrator), who concluded that the recently uploaded content is based on a non-free license, disallowing commercial use and/or derivative works.',
+		subgroup: {
+			name: 'lrfailed_rationale',
+			parameter: '2',
+			type: 'input',
+			label: 'Optional explanation: ',
+			size: 60
+		}
+	},
+	{
+		label: 'F4: Volunteer Response Team',
+		value: 'vrt',
+		code: 'f4',
+		tooltip:
+			'Files tagged by VRT Reviewers as having insufficient permission, or files tagged with OTRS pending for over 30 days.',
+		subgroup: {
+			name: 'vrt_rationale',
+			parameter: '2',
+			type: 'input',
+			label: 'Optional explanation: ',
+			size: 60
+		}
+	},
+	// Skip F5: this should be under DI module
+	{
+		label: 'F6: License laundering',
+		value: 'll',
+		code: 'f6',
+		tooltip:
+			'Content uploaded via license laundering techniques is a copyright violation. Users uploading in such techniques may be subjected to their account being temporarily or permanently blocked.',
+		subgroup: {
+			name: 'll_rationale',
+			parameter: '2',
+			utparam: '2',
+			type: 'input',
+			label: 'Optional explanation: ',
+			size: 60
+		}
+	},
+	{
+		label: 'F7: Corrupt, missing, or empty file',
+		value: 'noimage',
+		code: 'f7',
+		tooltip:
+			'Empty file pages are subject to speedy deletion, unless they are being used as redirects. The same is true for files that are corrupt or invalid when viewed in full resolution, or are in a disallowed format.',
+		subgroup: {
+			name: 'noimage_rationale',
+			parameter: '2',
+			type: 'input',
+			label: 'Optional explanation: ',
+			size: 60
+		}
+	},
+	{
+		label: 'F8: Duplicate file',
+		value: 'duplicate',
+		code: 'f8',
+		tooltip:
+			'Any file that is a redundant copy, in the same file format and same or lower resolution, of something else on Wikimedia Commons.',
+		subgroup: {
+			name: 'duplicate_filename',
+			parameter: '1',
+			log: '[[:$1]]',
+			type: 'input',
+			label: 'File this is redundant to: ',
+			tooltip: 'The "File:" prefix must be left off.'
+		}
+	},
+	{
+		label: 'F9: Embedded data',
+		value: 'embeddeddata',
+		code: 'f9',
+		tooltip:
+			'The file contains additional embedded data in the form of a password protected archive.',
+		subgroup: {
+			name: 'embeddeddata_rationale',
+			parameter: '2',
+			type: 'input',
+			label: 'Optional explanation: ',
+			size: 60
+		}
+	},
+	{
+		label: 'F10: Personal photos by non-contributors',
+		value: 'selfie',
+		code: 'f10',
+		tooltip:
+			'Low-to-medium quality selfies and other personal images of or by users who have no constructive global contributions.',
+		subgroup: {
+			name: 'selfie_rationale',
+			parameter: '2',
+			type: 'input',
+			label: 'Optional explanation: ',
+			size: 60
+		}
 	}
 ];
 
-Twinkle.speedy.articleList = [
+Twinkle.speedy.galleryList = [
 	{
-		label: 'A1: No context. Articles lacking sufficient context to identify the subject of the article.',
-		value: 'nocontext',
-		tooltip: 'Example: "He is a funny man with a red car. He makes people laugh." This applies only to very short articles. Context is different from content, treated in A3, below.'
+		label: 'GA1: Gallery without images or other media files',
+		value: 'emptygallery',
+		code: 'ga1',
+		tooltip:
+			'Mainspace pages (galleries) that are empty or contain no useful content, such as pages that contain text but no images or other media.'
 	},
 	{
-		label: 'A2: Foreign language articles that exist on another Wikimedia project',
-		value: 'foreign',
-		tooltip: 'If the article in question does not exist on another project, the template {{notenglish}} should be used instead. All articles in a non-English language that do not meet this criteria (and do not meet any other criteria for speedy deletion) should be listed at Pages Needing Translation (PNT) for review and possible translation',
-		subgroup: {
-			name: 'foreign_source',
-			type: 'input',
-			label: 'Interwiki link to the article on the foreign-language wiki: ',
-			tooltip: 'For example, fr:Bonjour'
-		}
-	},
-	{
-		label: 'A3: No content whatsoever',
-		value: 'nocontent',
-		tooltip: 'Any article consisting only of links elsewhere (including hyperlinks, category tags and "see also" sections), a rephrasing of the title, and/or attempts to correspond with the person or group named by its title. This does not include disambiguation pages'
-	},
-	{
-		label: 'A5: Transwikied articles',
-		value: 'transwiki',
-		tooltip: 'Any article that has been discussed at Articles for Deletion (et al), where the outcome was to transwiki, and where the transwikification has been properly performed and the author information recorded. Alternately, any article that consists of only a dictionary definition, where the transwikification has been properly performed and the author information recorded',
-		subgroup: {
-			name: 'transwiki_location',
-			type: 'input',
-			label: 'Link to where the page has been transwikied: ',
-			tooltip: 'For example, https://en.wiktionary.org/wiki/twinkle or [[wikt:twinkle]]'
-		}
-	},
-	{
-		label: 'A7: No indication of importance (people, groups, companies, web content, individual animals, or organized events)',
-		value: 'a7',
-		tooltip: 'An article about a real person, group of people, band, club, company, web content, individual animal, tour, or party that does not assert the importance or significance of its subject. If controversial, or if a previous AfD has resulted in the article being kept, the article should be nominated for AfD instead',
-		hideWhenSingle: true
-	},
-	{
-		label: 'A7: No indication of importance (person)',
-		value: 'person',
-		tooltip: 'An article about a real person that does not assert the importance or significance of its subject. If controversial, or if there has been a previous AfD that resulted in the article being kept, the article should be nominated for AfD instead',
-		hideWhenMultiple: true
-	},
-	{
-		label: 'A7: No indication of importance (musician(s) or band)',
-		value: 'band',
-		tooltip: 'Article about a band, singer, musician, or musical ensemble that does not assert the importance or significance of the subject',
-		hideWhenMultiple: true
-	},
-	{
-		label: 'A7: No indication of importance (club, society or group)',
-		value: 'club',
-		tooltip: 'Article about a club, society or group that does not assert the importance or significance of the subject',
-		hideWhenMultiple: true
-	},
-	{
-		label: 'A7: No indication of importance (company or organization)',
-		value: 'corp',
-		tooltip: 'Article about a company or organization that does not assert the importance or significance of the subject',
-		hideWhenMultiple: true
-	},
-	{
-		label: 'A7: No indication of importance (website or web content)',
-		value: 'web',
-		tooltip: 'Article about a web site, blog, online forum, webcomic, podcast, or similar web content that does not assert the importance or significance of its subject',
-		hideWhenMultiple: true
-	},
-	{
-		label: 'A7: No indication of importance (individual animal)',
-		value: 'animal',
-		tooltip: 'Article about an individual animal (e.g. pet) that does not assert the importance or significance of its subject',
-		hideWhenMultiple: true
-	},
-	{
-		label: 'A7: No indication of importance (organized event)',
-		value: 'event',
-		tooltip: 'Article about an organized event (tour, function, meeting, party, etc.) that does not assert the importance or significance of its subject',
-		hideWhenMultiple: true
-	},
-	{
-		label: 'A9: Unremarkable musical recording where artist\'s article doesn\'t exist',
-		value: 'a9',
-		tooltip: 'An article about a musical recording which does not indicate why its subject is important or significant, and where the artist\'s article has never existed or has been deleted'
-	},
-	{
-		label: 'A10: Recently created article that duplicates an existing topic',
-		value: 'a10',
-		tooltip: 'A recently created article with no relevant page history that does not aim to expand upon, detail or improve information within any existing article(s) on the subject, and where the title is not a plausible redirect. This does not include content forks, split pages or any article that aims at expanding or detailing an existing one.',
-		subgroup: {
-			name: 'a10_article',
-			type: 'input',
-			label: 'Article that is duplicated: '
-		}
-	},
-	{
-		label: 'A11: Obviously made up by creator, and no claim of significance',
-		value: 'madeup',
-		tooltip: 'An article which plainly indicates that the subject was invented/coined/discovered by the article\'s creator or someone they know personally, and does not credibly indicate why its subject is important or significant'
+		label: 'GA2: User intended to create encyclopedic content',
+		value: 'encyclopediagallery',
+		code: 'ga2',
+		tooltip:
+			"Page intended to be an encyclopedic article. Articles and biographies belong in the Wikipedia projects, and are out of Commons's project scope."
 	}
 ];
 
 Twinkle.speedy.categoryList = [
 	{
-		label: 'C1: Empty categories',
-		value: 'catempty',
-		tooltip: 'Categories that have been unpopulated for at least seven days. This does not apply to categories being discussed at WP:CFD, disambiguation categories, and certain other exceptions. If the category isn\'t relatively new, it possibly contained articles earlier, and deeper investigation is needed'
+		label: 'C1: Improperly named category',
+		value: 'catbadname',
+		code: 'c1',
+		tooltip:
+			'Categories with incorrect names may be speedily deleted after their contents have been moved to a properly named category. If the old category name is also correct, a redirect should be left in place. See [[Commons:Rename a category: Should the old category be deleted?]]',
+		subgroup: {
+			name: 'catbadname_name',
+			parameter: '2',
+			type: 'input',
+			label: 'Name of correctly named category: ',
+			size: 60
+		}
 	},
 	{
-		label: 'G8: Categories populated by a deleted or retargeted template',
-		value: 'templatecat',
-		tooltip: 'This is for situations where a category is effectively empty, because the template(s) that formerly placed pages in that category are now deleted. This excludes categories that are still in use.',
+		label: 'C2: Empty categories',
+		value: 'catempty',
+		code: 'c2',
+		tooltip:
+			"If a category is empty and is obviously unusable, unlikely to be ever meaningfully used, it may be speedily deleted. Don't apply if the page is marked with an explanation of why it should be kept or if the deletion can be controversial, the category was recently unconsensually emptied, etc. Consider redirecting or renaming the category rather than deleting it.",
 		subgroup: {
-			name: 'templatecat_rationale',
+			name: 'catempty_rationale',
+			parameter: '2',
 			type: 'input',
 			label: 'Optional explanation: ',
 			size: 60
 		}
 	},
 	{
-		label: 'G8: Redirects to non-existent targets',
+		label: 'G2: Broken redirects',
 		value: 'redirnone',
-		tooltip: 'This excludes any page that is useful to the project, and in particular: deletion discussions that are not logged elsewhere, user and user talk pages, talk page archives, plausible redirects that can be changed to valid targets, and file pages or talk pages for files that exist on Wikimedia Commons.',
-		hideWhenMultiple: true
+		code: 'g2',
+		tooltip:
+			'This excludes any page that is useful to the project, and in particular: deletion discussions that are not logged elsewhere, user and user talk pages, talk page archives, plausible redirects that can be changed to valid targets, and file pages or talk pages for files that exist on Wikimedia Commons.'
 	}
 ];
 
 Twinkle.speedy.userList = [
 	{
-		label: 'U1: User request',
-		value: 'userreq',
-		tooltip: 'Personal subpages, upon request by their user. In some rare cases there may be administrative need to retain the page. Also, sometimes, main user pages may be deleted as well. See Wikipedia:User page for full instructions and guidelines',
-		subgroup: mw.config.get('wgNamespaceNumber') === 3 && mw.config.get('wgTitle').indexOf('/') === -1 ? {
-			name: 'userreq_rationale',
-			type: 'input',
-			label: 'A mandatory rationale to explain why this user talk page should be deleted: ',
-			tooltip: 'User talk pages are deleted only in highly exceptional circumstances. See WP:DELTALK.',
-			size: 60
-		} : null,
+		label: 'U1: User requested deletion in own user space',
+		value: 'userspacereq',
+		code: 'u1',
+		tooltip:
+			'User requested deletion of their own user page or user-subpage. User pages that are blanked by the user may also be deleted under this criterion.',
+		subgroup:
+			mw.config.get('wgNamespaceNumber') === 3 && mw.config.get('wgTitle').indexOf('/') === -1
+				? {
+					name: 'userreq_rationale',
+					parameter: '2',
+					type: 'input',
+					label:
+							'A mandatory rationale to explain why this user talk page should be deleted: ',
+					tooltip:
+							'User talk pages are deleted only in highly exceptional circumstances. See WP:DELTALK.',
+					size: 60
+				  }
+				: null,
 		hideSubgroupWhenMultiple: true
 	},
 	{
 		label: 'U2: Nonexistent user',
 		value: 'nouser',
-		tooltip: 'User pages of users that do not exist (Check Special:Listusers)'
-	},
-	{
-		label: 'U3: Non-free galleries',
-		value: 'gallery',
-		tooltip: 'Galleries in the userspace which consist mostly of "fair use" or non-free files. Wikipedia\'s non-free content policy forbids users from displaying non-free files, even ones they have uploaded themselves, in userspace. It is acceptable to have free files, GFDL-files, Creative Commons and similar licenses along with public domain material, but not "fair use" files',
+		code: 'u2',
+		tooltip:
+			'User space of non-existent user. Redirects may be created (and protected) for those user names of which the account was renamed.',
 		hideWhenRedirect: true
 	},
 	{
-		label: 'U5: Blatant WP:NOTWEBHOST violations',
-		value: 'notwebhost',
-		tooltip: 'Pages in userspace consisting of writings, information, discussions, and/or activities not closely related to Wikipedia\'s goals, where the owner has made few or no edits outside of userspace, with the exception of plausible drafts and pages adhering to WP:UPYES.',
+		label: 'U3: Inappropriate use of user pages',
+		value: 'inappuserspace',
+		code: 'u3',
+		tooltip:
+			'Inappropriate use of user pages. These include user pages that contain purely advertising or promotional material, or those that are created with the intention of harassment or attack. Those that contain gibberish or unrecognisable content may also be deleted under this criterion.',
+		subgroup: {
+			name: 'inappuser_rationale',
+			parameter: '2',
+			type: 'input',
+			label: 'Optional explanation: ',
+			size: 60
+		},
 		hideWhenRedirect: true
-	},
+	}
+];
+
+Twinkle.speedy.commonsList = [
 	{
-		label: 'G11: Promotional user page under a promotional user name',
-		value: 'spamuser',
-		tooltip: 'A promotional user page, with a username that promotes or implies affiliation with the thing being promoted. Note that simply having a page on a company or product in one\'s userspace does not qualify it for deletion. If a user page is spammy but the username is not, then consider tagging with regular G11 instead.',
-		hideWhenMultiple: true,
-		hideWhenRedirect: true
-	},
-	{
-		label: 'G13: AfC draft submission or a blank draft, stale by over 6 months',
-		value: 'afc',
-		tooltip: 'Any rejected or unsubmitted AfC draft submission or a blank draft, that has not been edited in over 6 months (excluding bot edits).',
-		hideWhenMultiple: true,
-		hideWhenRedirect: true
+		label: 'COM1: Improperly filed or routinely emptied deletion request or log',
+		value: 'com1',
+		code: 'com1',
+		tooltip:
+			'This includes Deletion Requests (DRs) that are corrupted or incorrect and cannot be fixed, or redundant DRs for pages that are eligible for speedy deletion; this requires either formally closing the DR in order to both close the DR and have the bot remove it from the log, or deleting the DR page and removing the daily log entry. Deletion logs are also routinely emptied as discussions are closed, when empty they may be deleted immediately. Note that this does not apply to DR archives, which are separate from the working logs.'
 	}
 ];
 
 Twinkle.speedy.templateList = [
 	{
-		label: 'T3: Duplicate templates or hardcoded instances',
-		value: 'duplicatetemplate',
-		tooltip: 'Templates that are either substantial duplications of another template or hardcoded instances of another template where the same functionality could be provided by that other template',
+		label: 'T1: Recently created duplicate template',
+		value: 't1',
+		code: 't1',
+		tooltip: 'A recently created template that duplicates an existing older template.',
 		subgroup: {
-			name: 'duplicatetemplate_2',
+			name: 't1_rationale',
+			parameter: '2',
 			type: 'input',
-			label: 'Template this is redundant to: ',
-			tooltip: 'The "Template:" prefix is not needed.'
-		},
-		hideWhenMultiple: true
-	}
-];
-
-Twinkle.speedy.portalList = [
-	{
-		label: 'P1: Portal that would be subject to speedy deletion if it were an article',
-		value: 'p1',
-		tooltip: 'You must specify a single article criterion that applies in this case (A1, A3, A7, or A10).',
-		subgroup: {
-			name: 'p1_criterion',
-			type: 'input',
-			label: 'Article criterion that would apply: '
+			label: 'Explanation. Please include the template that this duplicates here: ',
+			size: 60
 		}
 	},
 	{
-		label: 'P2: Underpopulated portal (fewer than three non-stub articles)',
-		value: 'emptyportal',
-		tooltip: 'Any Portal based on a topic for which there is not a non-stub header article, and at least three non-stub articles detailing subject matter that would be appropriate to discuss under the title of that Portal'
+		label: 'T2: Unused template',
+		value: 't2',
+		code: 't2',
+		tooltip:
+			'Unused templates (except maintenance/project templates that are substituted), are subjected to speedy deletion.',
+		subgroup: {
+			name: 't2_rationale',
+			parameter: '2',
+			type: 'input',
+			label: 'Optional explanation: ',
+			size: 60
+		}
 	}
 ];
 
 Twinkle.speedy.generalList = [
 	{
-		label: 'G1: Patent nonsense. Pages consisting purely of incoherent text or gibberish with no meaningful content or history.',
-		value: 'nonsense',
-		tooltip: 'This does not include poor writing, partisan screeds, obscene remarks, vandalism, fictional material, material not in English, poorly translated material, implausible theories, or hoaxes. In short, if you can understand it, G1 does not apply.',
-		hideInNamespaces: [ 2 ] // Not applicable in userspace
+		label:
+			'G1: Test page, accidental creation, or page containing nonsense or no valid content',
+		value: 'g1',
+		code: 'g1',
+		tooltip:
+			"Page contains redundant content that was previously used for testing, was accidentally created, or contains content that is gibberish or of nothing meaningful. This may also include text placed in talk pages (which has no further history) that doesn't help or refer to the related page.",
+		hideInNamespaces: [2] // Not applicable in userspace, use U1 for that
 	},
 	{
-		label: 'G2: Test page',
-		value: 'test',
-		tooltip: 'A page created to test editing or other Wikipedia functions. Pages in the User namespace are not included, nor are valid but unused or duplicate templates (although criterion T3 may apply).',
-		hideInNamespaces: [ 2 ] // Not applicable in userspace
+		label: 'G2: Unused and implausible, or broken redirect',
+		value: 'redir',
+		code: 'g2',
+		tooltip:
+			'Page is an unused AND implausible redirect, or a redirect that is dependent on deleted or non-existent content. Unused talk page redirects created as a result of a page move and cross-namespace redirects may also be deleted under this criterion.'
 	},
 	{
-		label: 'G3: Pure vandalism',
+		label: 'G3: Content intended as vandalism, threat, attack, or hoax',
 		value: 'vandalism',
-		tooltip: 'Plain pure vandalism (including redirects left behind from pagemove vandalism)'
-	},
-	{
-		label: 'G3: Blatant hoax',
-		value: 'hoax',
-		tooltip: 'Blatant and obvious hoax, to the point of vandalism',
-		hideWhenMultiple: true
+		code: 'g3',
+		tooltip:
+			'Content that is posted with the intention of vandalizing, or with the intention of threatening, harassing, or attacking another person or user. Users that commit such acts are subjected to their accounts being temporarily or permanently blocked, depending on the severity of the content. Content posted with the intention of creating/spreading hoaxes may also be deleted under this criterion.',
+		subgroup: {
+			name: 'vandalism_rationale',
+			parameter: '2',
+			type: 'input',
+			label: 'Optional explanation: ',
+			size: 60
+		}
 	},
 	{
 		label: 'G4: Recreation of material deleted via a deletion discussion',
 		value: 'repost',
-		tooltip: 'A copy, by any title, of a page that was deleted via an XfD process or Deletion review, provided that the copy is substantially identical to the deleted version. This clause does not apply to content that has been "userfied", to content undeleted as a result of Deletion review, or if the prior deletions were proposed or speedy deletions, although in this last case, other speedy deletion criteria may still apply',
+		code: 'g4',
+		tooltip:
+			"Page or file matches content that was previously deleted per community consensus. Repeated recreation of such content may lead to the user's account being blocked. The author or uploader may ask the deleting administrator to restore the file, or file an Undeletion Request.",
 		subgroup: {
 			name: 'repost_xfd',
+			parameter: '2',
+			log: '[[:$1]]',
 			type: 'input',
 			label: 'Page where the deletion discussion took place: ',
-			tooltip: 'Must start with "Wikipedia:"',
+			tooltip: 'Must start with "Commons:"',
 			size: 60
 		}
 	},
+	// Skip G5: content falling under G5 can either be revdelled or fall under G6.
 	{
-		label: 'G5: Created by a banned or blocked user',
-		value: 'banned',
-		tooltip: 'Pages created by banned or blocked users in violation of their ban or block, and which have no substantial edits by others',
-		subgroup: {
-			name: 'banned_user',
-			type: 'input',
-			label: 'Username of banned user (if available): ',
-			tooltip: 'Should not start with "User:"'
-		}
-	},
-	{
-		label: 'G6: Move',
-		value: 'move',
-		tooltip: 'Making way for an uncontroversial move like reversing a redirect',
-		subgroup: [
-			{
-				name: 'move_page',
-				type: 'input',
-				label: 'Page to be moved here: '
-			},
-			{
-				name: 'move_reason',
-				type: 'input',
-				label: 'Reason: ',
-				size: 60
-			}
-		],
-		hideWhenMultiple: true
-	},
-	{
-		label: 'G6: XfD',
-		value: 'xfd',
-		tooltip: 'A deletion discussion (at AfD, FfD, RfD, TfD, CfD, or MfD) was closed as "delete", but the page wasn\'t actually deleted.',
-		subgroup: {
-			name: 'xfd_fullvotepage',
-			type: 'input',
-			label: 'Page where the deletion discussion was held: ',
-			tooltip: 'Must start with "Wikipedia:"',
-			size: 40
-		},
-		hideWhenMultiple: true
-	},
-	{
-		label: 'G6: Copy-and-paste page move',
-		value: 'copypaste',
-		tooltip: 'This only applies for a copy-and-paste page move of another page that needs to be temporarily deleted to make room for a clean page move.',
-		subgroup: {
-			name: 'copypaste_sourcepage',
-			type: 'input',
-			label: 'Original page that was copy-pasted here: '
-		},
-		hideWhenMultiple: true
-	},
-	{
-		label: 'G6: Housekeeping and non-controversial cleanup',
+		label: 'G6: Uncontroversial maintenance',
 		value: 'g6',
-		tooltip: 'Other routine maintenance tasks',
+		code: 'g6',
+		tooltip:
+			'Content temporarily deleted to make way for a page move, or other uncontroversial maintenance tasks that require temporary or permanent deletion (such as history merging or splitting).',
 		subgroup: {
 			name: 'g6_rationale',
+			parameter: '2',
 			type: 'input',
-			label: 'Rationale: ',
+			label:
+				'Optional explanation. If this is for a move, include the page name for the page to be moved here and the reason. Otherwise, explain why this should be deleted: ',
 			size: 60
 		}
 	},
 	{
-		label: 'G7: Author requests deletion, or author blanked',
+		label: 'G7: Author or uploader request deletion of RECENT content',
 		value: 'author',
-		tooltip: 'Any page for which deletion is requested by the original author in good faith, provided the page\'s only substantial content was added by its author. If the author blanks the page, this can also be taken as a deletion request.',
+		code: 'g7',
+		tooltip:
+			'Original author or uploader requests deletion of recently created (<7 days) unused content. For author/uploader requests for deletion of content that is older a deletion request should be filed instead. If the author blanks the page, this can also be taken as a deletion request.',
 		subgroup: {
 			name: 'author_rationale',
+			parameter: '2',
 			type: 'input',
 			label: 'Optional explanation: ',
 			tooltip: 'Perhaps linking to where the author requested this deletion.',
 			size: 60
-		},
-		hideSubgroupWhenSysop: true
+		}
 	},
 	{
-		label: 'G8: Pages dependent on a non-existent or deleted page',
+		label: 'G8: Page dependent on deleted or non-existent content',
 		value: 'g8',
-		tooltip: 'such as talk pages with no corresponding subject page; subpages with no parent page; file pages without a corresponding file; redirects to non-existent targets; or categories populated by deleted or retargeted templates. This excludes any page that is useful to the project, and in particular: deletion discussions that are not logged elsewhere, user and user talk pages, talk page archives, plausible redirects that can be changed to valid targets, and file pages or talk pages for files that exist on Wikimedia Commons.',
+		code: 'g8',
+		tooltip:
+			'The page or file depends on content that was deleted or no longer existing, such as orphaned talk pages without useful content, subpages without parent page, and so on. The criterion only applies to content within Wikimedia, and does not apply to external content (i.e., deleted source).',
 		subgroup: {
 			name: 'g8_rationale',
+			parameter: '2',
 			type: 'input',
 			label: 'Optional explanation: ',
 			size: 60
 		},
 		hideSubgroupWhenSysop: true
 	},
+	// Skip G9: WMF probably won't use Twinkle.
 	{
-		label: 'G8: Subpages with no parent page',
-		value: 'subpage',
-		tooltip: 'This excludes any page that is useful to the project, and in particular: deletion discussions that are not logged elsewhere, user and user talk pages, talk page archives, plausible redirects that can be changed to valid targets, and file pages or talk pages for files that exist on Wikimedia Commons.',
-		hideWhenMultiple: true,
-		hideInNamespaces: [ 0, 6, 8 ]  // hide in main, file, and mediawiki-spaces
+		label: 'G10: Files and pages created as advertisements',
+		value: 'advert',
+		code: 'g10',
+		tooltip:
+			'This includes only content uploaded to promote goods and services when it is clearly not useful for any educational purpose (see Commons:Project scope). Files that illustrate contemporary or historical advertisements do not fall under this criterion.',
+		subgroup: {
+			name: 'advert_rationale',
+			parameter: '2',
+			type: 'input',
+			label: 'Optional explanation: ',
+			size: 60
+		}
 	},
 	{
-		label: 'G10: Attack page',
-		value: 'attack',
-		tooltip: 'Pages that serve no purpose but to disparage or threaten their subject or some other entity (e.g., "John Q. Doe is an imbecile"). This includes a biography of a living person that is negative in tone and unsourced, where there is no NPOV version in the history to revert to. Administrators deleting such pages should not quote the content of the page in the deletion summary!'
-	},
-	{
-		label: 'G10: Wholly negative, unsourced BLP',
-		value: 'negublp',
-		tooltip: 'A biography of a living person that is entirely negative in tone and unsourced, where there is no neutral version in the history to revert to.',
-		hideWhenMultiple: true
-	},
-	{
-		label: 'G11: Unambiguous advertising or promotion',
-		value: 'spam',
-		tooltip: 'Pages which exclusively promote a company, product, group, service, or person and which would need to be fundamentally rewritten in order to become encyclopedic. Note that an article about a company or a product which describes its subject from a neutral point of view does not qualify for this criterion; an article that is blatant advertising should have inappropriate content as well'
-	},
-	{
-		label: 'G12: Unambiguous copyright infringement',
-		value: 'copyvio',
-		tooltip: 'Either: (1) Material was copied from another website that does not have a license compatible with Wikipedia, or is photography from a stock photo seller (such as Getty Images or Corbis) or other commercial content provider; (2) There is no non-infringing content in the page history worth saving; or (3) The infringement was introduced at once by a single person rather than created organically on wiki and then copied by another website such as one of the many Wikipedia mirrors',
+		label: 'G11: Blatant text copyright violation',
+		value: 'textcopyvio',
+		code: 'g11',
+		tooltip: 'Page contains copyrighted text from webpages or documents without permission.',
 		subgroup: [
 			{
-				name: 'copyvio_url',
+				name: 'textcopyvio_rationale',
+				parameter: '2',
 				type: 'input',
-				label: 'URL (if available): ',
-				tooltip: 'If the material was copied from an online source, put the URL here, including the "http://" or "https://" protocol.',
-				size: 60
-			},
-			{
-				name: 'copyvio_url2',
-				type: 'input',
-				label: 'Additional URL: ',
-				tooltip: 'Optional. Should begin with "http://" or "https://"',
-				size: 60
-			},
-			{
-				name: 'copyvio_url3',
-				type: 'input',
-				label: 'Additional URL: ',
-				tooltip: 'Optional. Should begin with "http://" or "https://"',
+				label: 'Deletion rationale for copyvios. Include the URL or source of the copyvio: ',
 				size: 60
 			}
 		]
-	},
-	{
-		label: 'G13: Page in draft namespace or userspace AfC submission, stale by over 6 months',
-		value: 'afc',
-		tooltip: 'Any rejected or unsubmitted AfC submission in userspace or any non-redirect page in draft namespace, that has not been edited for more than 6 months. Blank drafts in either namespace are also included.',
-		hideWhenRedirect: true,
-		showInNamespaces: [2, 118]  // user, draft namespaces only
-	},
-	{
-		label: 'G14: Unnecessary disambiguation page',
-		value: 'disambig',
-		tooltip: 'This only applies for orphaned disambiguation pages which either: (1) disambiguate only one existing Wikipedia page and whose title ends in "(disambiguation)" (i.e., there is a primary topic); or (2) disambiguate no (zero) existing Wikipedia pages, regardless of its title.  It also applies to orphan "Foo (disambiguation)" redirects that target pages that are not disambiguation or similar disambiguation-like pages (such as set index articles or lists)'
 	}
 ];
 
 Twinkle.speedy.redirectList = [
-	{
-		label: 'R2: Redirect from mainspace to any other namespace except the Category:, Template:, Wikipedia:, Help: and Portal: namespaces',
-		value: 'rediruser',
-		tooltip: 'This does not include the pseudo-namespace shortcuts. If this was the result of a page move, consider waiting a day or two before deleting the redirect',
-		showInNamespaces: [ 0 ]
-	},
-	{
-		label: 'R3: Recently created redirect from an implausible typo or misnomer',
-		value: 'redirtypo',
-		tooltip: 'However, redirects from common misspellings or misnomers are generally useful, as are redirects in other languages'
-	},
-	{
-		label: 'R4: File namespace redirect with a name that matches a Commons page',
-		value: 'redircom',
-		tooltip: 'The redirect should have no incoming links (unless the links are cleary intended for the file or redirect at Commons).',
-		showInNamespaces: [ 6 ]
-	},
-	{
-		label: 'G6: Redirect to malplaced disambiguation page',
-		value: 'movedab',
-		tooltip: 'This only applies for redirects to disambiguation pages ending in (disambiguation) where a primary topic does not exist.',
-		hideWhenMultiple: true
-	},
-	{
-		label: 'G8: Redirects to non-existent targets',
-		value: 'redirnone',
-		tooltip: 'This excludes any page that is useful to the project, and in particular: deletion discussions that are not logged elsewhere, user and user talk pages, talk page archives, plausible redirects that can be changed to valid targets, and file pages or talk pages for files that exist on Wikimedia Commons.',
-		hideWhenMultiple: true
-	}
+	// {
+	// 	label: 'G2: Unused and implausible, or broken redirect',
+	// 	value: 'redir',
+	// 	code: 'g2',
+	// 	tooltip:
+	// 		'Page is an unused AND implausible redirect, or a redirect that is dependent on deleted or non-existent content. Unused talk page redirects created as a result of a page move and cross-namespace redirects may also be deleted under this criterion.',
+	// }
 ];
 
 Twinkle.speedy.normalizeHash = {
-	'reason': 'db',
-	'nonsense': 'g1',
-	'test': 'g2',
-	'vandalism': 'g3',
-	'hoax': 'g3',
-	'repost': 'g4',
-	'banned': 'g5',
-	'move': 'g6',
-	'xfd': 'g6',
-	'movedab': 'g6',
-	'copypaste': 'g6',
-	'g6': 'g6',
-	'author': 'g7',
-	'g8': 'g8',
-	'talk': 'g8',
-	'subpage': 'g8',
-	'redirnone': 'g8',
-	'templatecat': 'g8',
-	'imagepage': 'g8',
-	'attack': 'g10',
-	'negublp': 'g10',
-	'spam': 'g11',
-	'spamuser': 'g11',
-	'copyvio': 'g12',
-	'afc': 'g13',
-	'disambig': 'g14',
-	'nocontext': 'a1',
-	'foreign': 'a2',
-	'nocontent': 'a3',
-	'transwiki': 'a5',
-	'a7': 'a7',
-	'person': 'a7',
-	'corp': 'a7',
-	'web': 'a7',
-	'band': 'a7',
-	'club': 'a7',
-	'animal': 'a7',
-	'event': 'a7',
-	'a9': 'a9',
-	'a10': 'a10',
-	'madeup': 'a11',
-	'rediruser': 'r2',
-	'redirtypo': 'r3',
-	'redircom': 'r4',
-	'redundantimage': 'f1',
-	'noimage': 'f2',
-	'fpcfail': 'f2',
-	'noncom': 'f3',
-	'unksource': 'f4',
-	'unfree': 'f5',
-	'f5': 'f5',
-	'norat': 'f6',
-	'badfairuse': 'f7',
-	'commons': 'f8',
-	'imgcopyvio': 'f9',
-	'badfiletype': 'f10',
-	'nopermission': 'f11',
-	'catempty': 'c1',
-	'userreq': 'u1',
-	'nouser': 'u2',
-	'gallery': 'u3',
-	'notwebhost': 'u5',
-	'duplicatetemplate': 't3',
-	'p1': 'p1',
-	'emptyportal': 'p2'
+	reason: 'db',
+	g1: 'g1',
+	vandalism: 'g3',
+	hoax: 'g3',
+	repost: 'g4',
+	g6: 'g6',
+	author: 'g7',
+	g8: 'g8',
+	talk: 'g8',
+	g8: 'g8',
+	redirnone: 'g8',
+	advert: 'g10',
+	textcopyvio: 'g11',
+	copyvio: 'f1',
+	logo: 'f1',
+	fairuse: 'f2',
+	deriv: 'f3',
+	lrfailed: 'f4',
+	vrt: 'f4',
+	ll: 'f6',
+	noimage: 'f7',
+	duplicate: 'f8',
+	embeddeddata: 'f9',
+	selfie: 'f10',
+	emptygallery: 'ga1',
+	encyclopediagallery: 'ga2',
+	catbadname: 'c1',
+	catempty: 'c2',
+	userspacereq: 'u1',
+	nouser: 'u2',
+	inappuserspace: 'u3',
+	com1: 'com1',
+	t1: 't1',
+	t2: 't2',
+	redir: 'g2'
 };
 
 Twinkle.speedy.callbacks = {
@@ -1203,12 +1035,14 @@ Twinkle.speedy.callbacks = {
 			pst: 'true',
 			text: wikitext,
 			contentmodel: 'wikitext',
-			title: mw.config.get('wgPageName')
+			title: mw.config.get('wgPageName'),
+			disablelimitreport: true,
+			format: 'json'
 		};
 
 		var statusIndicator = new Morebits.status('Building deletion summary');
-		var api = new Morebits.wiki.api('Parsing deletion template', query, function(apiObj) {
-			var reason = decodeURIComponent($(apiObj.getXML().querySelector('text').childNodes[0].nodeValue).find('#delete-reason').text()).replace(/\+/g, ' ');
+		var api = new Morebits.wiki.api('Parsing deletion template', query, function(apiobj) {
+			var reason = decodeURIComponent($(apiobj.getResponse().parse.text).find('#delete-reason').text()).replace(/\+/g, ' ').replace(/CSD ([A-Z]{1,3}\d{1,2})/, '[[COM:CSD#$1|CSD $1]]');
 			if (!reason) {
 				statusIndicator.warn('Unable to generate summary from deletion template');
 			} else {
@@ -1275,16 +1109,18 @@ Twinkle.speedy.callbacks = {
 			notifytext += (params.welcomeuser ? '' : '|nowelcome=yes') + '}} ~~~~';
 
 			editsummary = 'Notification: speedy deletion' + (params.warnUser ? '' : ' nomination');
-			if (params.normalizeds.indexOf('g10') === -1) {  // no article name in summary for G10 taggings
-				editsummary += ' of [[:' + Morebits.pageNameNorm + ']].';
-			} else {
-				editsummary += ' of an attack page.';
-			}
+			editsummary += ' of [[:' + Morebits.pageNameNorm + ']].';
+			// if (params.normalizeds.indexOf('g10') === -1) {  // no article name in summary for G10 taggings
+			// 	editsummary += ' of [[:' + Morebits.pageNameNorm + ']].';
+			// } else {
+			// 	editsummary += ' of an attack page.';
+			// }
 
 			usertalkpage.setAppendText(notifytext);
 			usertalkpage.setEditSummary(editsummary);
 			usertalkpage.setChangeTags(Twinkle.changeTags);
 			usertalkpage.setCreateOption('recreate');
+			usertalkpage.setWatchlist(Twinkle.getPref('watchSpeedyUser'));
 			usertalkpage.setFollowRedirect(true, false);
 			usertalkpage.append(function onNotifySuccess() {
 				// add this nomination to the user's userspace log, if the user has enabled it
@@ -1315,6 +1151,8 @@ Twinkle.speedy.callbacks = {
 					if (params.promptForSummary) {
 						reason = prompt('Enter the deletion summary to use, or press OK to accept the automatically generated one.', reason);
 					}
+					console.log('Reason: %s', reason);
+					console.log('Code: %s', code);
 					Twinkle.speedy.callbacks.sysop.deletePage(reason, params);
 				});
 			}
@@ -1331,6 +1169,7 @@ Twinkle.speedy.callbacks = {
 			var deleteMain = function(callback) {
 				thispage.setEditSummary(reason);
 				thispage.setChangeTags(Twinkle.changeTags);
+				thispage.setWatchlist(params.watch);
 				thispage.deletePage(function() {
 					thispage.getStatusElement().info('done');
 					typeof callback === 'function' && callback();
@@ -1355,9 +1194,9 @@ Twinkle.speedy.callbacks = {
 			// delete talk page
 			if (params.deleteTalkPage &&
 					params.normalized !== 'f8' &&
-					document.getElementById('ca-talk').className !== 'new') {
+					!document.getElementById('ca-talk').classList.contains('new')) {
 				var talkpage = new Morebits.wiki.page(mw.config.get('wgFormattedNamespaces')[mw.config.get('wgNamespaceNumber') + 1] + ':' + mw.config.get('wgTitle'), 'Deleting talk page');
-				talkpage.setEditSummary('[[WP:CSD#G8|G8]]: Talk page of deleted page "' + Morebits.pageNameNorm + '"');
+				talkpage.setEditSummary('[[COM:CSD#G8|G8]]: Talk page of deleted page "' + Morebits.pageNameNorm + '"');
 				talkpage.setChangeTags(Twinkle.changeTags);
 				talkpage.deletePage();
 				// this is ugly, but because of the architecture of wiki.api, it is needed
@@ -1373,10 +1212,11 @@ Twinkle.speedy.callbacks = {
 			// delete redirects
 			if (params.deleteRedirects) {
 				var query = {
-					'action': 'query',
-					'titles': mw.config.get('wgPageName'),
-					'prop': 'redirects',
-					'rdlimit': 'max' // 500 is max for normal users, 5000 for bots and sysops
+					action: 'query',
+					titles: mw.config.get('wgPageName'),
+					prop: 'redirects',
+					rdlimit: 'max', // 500 is max for normal users, 5000 for bots and sysops
+					format: 'json'
 				};
 				var wikipedia_api = new Morebits.wiki.api('getting list of redirects...', query, Twinkle.speedy.callbacks.sysop.deleteRedirectsMain,
 					new Morebits.status('Deleting redirects'));
@@ -1388,42 +1228,42 @@ Twinkle.speedy.callbacks = {
 			var $link, $bigtext;
 			if (mw.config.get('wgNamespaceNumber') === 6 && params.normalized !== 'f8') {
 				$link = $('<a/>', {
-					'href': '#',
-					'text': 'click here to go to the Unlink tool',
-					'css': { 'fontSize': '130%', 'fontWeight': 'bold' },
-					'click': function() {
+					href: '#',
+					text: 'click here to go to the Unlink tool',
+					css: { fontSize: '130%', fontWeight: 'bold' },
+					click: function() {
 						Morebits.wiki.actionCompleted.redirect = null;
 						Twinkle.speedy.dialog.close();
 						Twinkle.unlink.callback('Removing usages of and/or links to deleted file ' + Morebits.pageNameNorm);
 					}
 				});
 				$bigtext = $('<span/>', {
-					'text': 'To orphan backlinks and remove instances of file usage',
-					'css': { 'fontSize': '130%', 'fontWeight': 'bold' }
+					text: 'To orphan backlinks and remove instances of file usage',
+					css: { fontSize: '130%', fontWeight: 'bold' }
 				});
 				Morebits.status.info($bigtext[0], $link[0]);
 			} else if (params.normalized !== 'f8') {
 				$link = $('<a/>', {
-					'href': '#',
-					'text': 'click here to go to the Unlink tool',
-					'css': { 'fontSize': '130%', 'fontWeight': 'bold' },
-					'click': function() {
+					href: '#',
+					text: 'click here to go to the Unlink tool',
+					css: { fontSize: '130%', fontWeight: 'bold' },
+					click: function() {
 						Morebits.wiki.actionCompleted.redirect = null;
 						Twinkle.speedy.dialog.close();
 						Twinkle.unlink.callback('Removing links to deleted page ' + Morebits.pageNameNorm);
 					}
 				});
 				$bigtext = $('<span/>', {
-					'text': 'To orphan backlinks',
-					'css': { 'fontSize': '130%', 'fontWeight': 'bold' }
+					text: 'To orphan backlinks',
+					css: { fontSize: '130%', fontWeight: 'bold' }
 				});
 				Morebits.status.info($bigtext[0], $link[0]);
 			}
 		},
 		deleteRedirectsMain: function(apiobj) {
-			var xmlDoc = apiobj.getXML();
-			var $snapshot = $(xmlDoc).find('redirects rd');
-			var total = $snapshot.length;
+			var response = apiobj.getResponse();
+			var snapshot = response.query.pages[0].redirects || [];
+			var total = snapshot.length;
 			var statusIndicator = apiobj.statelem;
 
 			if (!total) {
@@ -1446,10 +1286,10 @@ Twinkle.speedy.callbacks = {
 
 			Morebits.wiki.addCheckpoint();
 
-			$snapshot.each(function(key, value) {
-				var title = $(value).attr('title');
+			snapshot.forEach(function(value) {
+				var title = value.title;
 				var page = new Morebits.wiki.page(title, 'Deleting redirect "' + title + '"');
-				page.setEditSummary('[[WP:CSD#G8|G8]]: Redirect to deleted page "' + Morebits.pageNameNorm + '"');
+				page.setEditSummary('[[COM:CSD#G8|G8]]: Redirect to deleted page "' + Morebits.pageNameNorm + '"');
 				page.setChangeTags(Twinkle.changeTags);
 				page.deletePage(onsuccess);
 			});
@@ -1460,28 +1300,12 @@ Twinkle.speedy.callbacks = {
 		main: function(pageobj) {
 			var statelem = pageobj.getStatusElement();
 
-			// defaults to /doc for lua modules, which may not exist
-			if (!pageobj.exists() && mw.config.get('wgPageContentModel') !== 'Scribunto') {
+			if (!pageobj.exists()) {
 				statelem.error("It seems that the page doesn't exist; perhaps it has already been deleted");
 				return;
 			}
 
-			var text = pageobj.getPageText();
 			var params = pageobj.getCallbackParameters();
-
-			statelem.status('Checking for tags on the page...');
-
-			// check for existing deletion tags
-			var tag = /(?:\{\{\s*(db|delete|db-.*?|speedy deletion-.*?)(?:\s*\||\s*\}\}))/.exec(text);
-			// This won't make use of the db-multiple template but it probably should
-			if (tag && !confirm('The page already has the CSD-related template {{' + tag[1] + '}} on it.  Do you want to add another CSD template?')) {
-				return;
-			}
-
-			var xfd = /\{\{((?:article for deletion|proposed deletion|prod blp|template for discussion)\/dated|[cfm]fd\b)/i.exec(text) || /#invoke:(RfD)/.exec(text);
-			if (xfd && !confirm('The deletion-related template {{' + xfd[1] + '}} was found on the page. Do you still want to add a CSD template?')) {
-				return;
-			}
 
 			// given the params, builds the template and also adds the user talk page parameters to the params that were passed in
 			// returns => [<string> wikitext, <object> utparams]
@@ -1489,79 +1313,121 @@ Twinkle.speedy.callbacks = {
 				code = buildData[0];
 			params.utparams = buildData[1];
 
-			// curate/patrol the page
-			if (Twinkle.getPref('markSpeedyPagesAsPatrolled')) {
-				pageobj.triage();
-			}
-
-			// Wrap SD template in noinclude tags if we are in template space.
-			// Won't work with userboxes in userspace, or any other transcluded page outside template space
-			if (mw.config.get('wgNamespaceNumber') === 10) {  // Template:
-				code = '<noinclude>' + code + '</noinclude>';
-			}
-
-			// Remove tags that become superfluous with this action
-			text = text.replace(/\{\{\s*([Uu]serspace draft)\s*(\|(?:\{\{[^{}]*\}\}|[^{}])*)?\}\}\s*/g, '');
-			if (mw.config.get('wgNamespaceNumber') === 6) {
-				// remove "move to Commons" tag - deletion-tagged files cannot be moved to Commons
-				text = text.replace(/\{\{(mtc|(copy |move )?to ?commons|move to wikimedia commons|copy to wikimedia commons)[^}]*\}\}/gi, '');
-			}
-
-			if (params.requestsalt) {
-				if (params.normalizeds.indexOf('g10') === -1) {
-					code = code + '\n{{salt}}';
-				} else {
-					code = '{{salt}}\n' + code;
-				}
-			}
-
-			// Generate edit summary for edit
-			var editsummary;
-			if (params.normalizeds.length > 1) {
-				editsummary = 'Requesting speedy deletion (';
-				$.each(params.normalizeds, function(index, norm) {
-					editsummary += '[[WP:CSD#' + norm.toUpperCase() + '|CSD ' + norm.toUpperCase() + ']], ';
-				});
-				editsummary = editsummary.substr(0, editsummary.length - 2); // remove trailing comma
-				editsummary += ').';
-			} else if (params.normalizeds[0] === 'db') {
-				editsummary = 'Requesting [[WP:CSD|speedy deletion]] with rationale "' + params.templateParams[0]['1'] + '".';
-			} else {
-				editsummary = 'Requesting speedy deletion ([[WP:CSD#' + params.normalizeds[0].toUpperCase() + '|CSD ' + params.normalizeds[0].toUpperCase() + ']]).';
-			}
-
 			// Set the correct value for |ts= parameter in {{db-g13}}
 			if (params.normalizeds.indexOf('g13') !== -1) {
 				code = code.replace('$TIMESTAMP', pageobj.getLastEditTime());
 			}
 
+			// Tag if possible, post on talk if not
+			if (pageobj.canEdit() && ['wikitext', 'Scribunto', 'javascript', 'css', 'sanitized-css'].indexOf(pageobj.getContentModel()) !== -1) {
+				var text = pageobj.getPageText();
 
-			// Blank attack pages
-			if (params.normalizeds.indexOf('g10') !== -1) {
-				text = code;
-			} else {
-				// Insert tag after short description or any hatnotes
+				statelem.status('Checking for tags on the page...');
+
+				// check for existing deletion tags
+				var tag = /(?:\{\{\s*(db|delete|db-.*?|speedy deletion-.*?)(?:\s*\||\s*\}\}))/.exec(text);
+				// This won't make use of the db-multiple template but it probably should
+				if (tag && !confirm('The page already has the CSD-related template {{' + tag[1] + '}} on it.  Do you want to add another CSD template?')) {
+					return;
+				}
+
+				var xfd = /\{\{((?:article for deletion|proposed deletion|prod blp|template for discussion)\/dated|[cfm]fd\b)/i.exec(text) || /#invoke:(RfD)/.exec(text);
+				if (xfd && !confirm('The deletion-related template {{' + xfd[1] + '}} was found on the page. Do you still want to add a CSD template?')) {
+					return;
+				}
+
+				// curate/patrol the page
+				if (Twinkle.getPref('markSpeedyPagesAsPatrolled')) {
+					pageobj.triage();
+				}
+
+				// Wrap SD template in noinclude tags if we are in template space.
+				// Won't work with userboxes in userspace, or any other transcluded page outside template space
+				if (mw.config.get('wgNamespaceNumber') === 10) {  // Template:
+					code = '<noinclude>' + code + '</noinclude>';
+				}
+
+				// Remove tags that become superfluous with this action
+				text = text.replace(/\{\{\s*([Uu]serspace draft)\s*(\|(?:\{\{[^{}]*\}\}|[^{}])*)?\}\}\s*/g, '');
+				if (mw.config.get('wgNamespaceNumber') === 6) {
+					// remove "move to Commons" tag - deletion-tagged files cannot be moved to Commons
+					text = text.replace(/\{\{(mtc|(copy |move )?to ?commons|move to wikimedia commons|copy to wikimedia commons)[^}]*\}\}/gi, '');
+				}
+
+				// if (params.requestsalt) {
+				// 	code += '\n{{salt}}';
+				// 	// if (params.normalizeds.indexOf('g10') === -1) {
+				// 	// 	code += '\n{{salt}}';
+				// 	// } else {
+				// 	// 	code = '{{salt}}\n' + code;
+				// 	// }
+				// }
+
+				if (mw.config.get('wgPageContentModel') === 'Scribunto') {
+					// Scribunto isn't parsed like wikitext, so CSD templates on modules need special handling to work
+					var equals = '';
+					while (code.indexOf(']' + equals + ']') !== -1) {
+						equals += '=';
+					}
+					code = "require('Module:Module wikitext')._addText([" + equals + '[' + code + ']' + equals + ']);';
+				} else if (['javascript', 'css', 'sanitized-css'].indexOf(mw.config.get('wgPageContentModel')) !== -1) {
+					// Likewise for JS/CSS pages
+					code = '/* ' + code + ' */';
+				}
+
+				// Generate edit summary for edit
+				var editsummary;
+				if (params.normalizeds.length > 1) {
+					editsummary = 'Requesting speedy deletion (';
+					$.each(params.normalizeds, function(index, norm) {
+						editsummary += '[[COM:CSD#' + norm.toUpperCase() + '|CSD ' + norm.toUpperCase() + ']], ';
+					});
+					editsummary = editsummary.substr(0, editsummary.length - 2); // remove trailing comma
+					editsummary += ').';
+				} else if (params.normalizeds[0] === 'db') {
+					editsummary = 'Requesting [[COM:CSD|speedy deletion]] with rationale "' + params.templateParams[0]['1'] + '".';
+				} else {
+					editsummary = 'Requesting speedy deletion ([[COM:CSD#' + params.normalizeds[0].toUpperCase() + '|CSD ' + params.normalizeds[0].toUpperCase() + ']]).';
+				}
+
 				var wikipage = new Morebits.wikitext.page(text);
 				text = wikipage.insertAfterTemplates(code + '\n', Twinkle.hatnoteRegex).getText();
-			}
+				// Blank attack pages
+				// if (params.normalizeds.indexOf('g10') !== -1) {
+				// 	text = code;
+				// } else {
+				// 	// Insert tag after short description or any hatnotes
+				// 	var wikipage = new Morebits.wikitext.page(text);
+				// 	text = wikipage.insertAfterTemplates(code + '\n', Twinkle.hatnoteRegex).getText();
+				// }
 
 
-			pageobj.setPageText(text);
-			pageobj.setEditSummary(editsummary);
-			pageobj.setWatchlist(params.watch);
-			if (params.scribunto) {
-				pageobj.setCreateOption('recreate'); // Module /doc might not exist
-				if (params.watch) {
-					// Watch module in addition to /doc subpage
-					var watch_query = {
-						action: 'watch',
-						titles: mw.config.get('wgPageName'),
-						token: mw.user.tokens.get('watchToken')
-					};
-					new Morebits.wiki.api('Adding Module to watchlist', watch_query).post();
+				pageobj.setPageText(text);
+				pageobj.setEditSummary(editsummary);
+				pageobj.setWatchlist(params.watch);
+				pageobj.save(Twinkle.speedy.callbacks.user.tagComplete);
+			} else { // Attempt to place on talk page
+				var talkName = new mw.Title(pageobj.getPageName()).getTalkPage().toText();
+				if (talkName !== pageobj.getPageName()) {
+					// if (params.requestsalt) {
+					// 	code += '\n{{salt}}';
+					// }
+
+					pageobj.getStatusElement().warn('Unable to edit page, placing tag on talk page');
+
+					var talk_page = new Morebits.wiki.page(talkName, 'Automatically placing tag on talk page');
+					talk_page.setNewSectionTitle(pageobj.getPageName() + ' nominated for CSD, request deletion');
+					talk_page.setNewSectionText(code + '\n\nI was unable to tag ' + pageobj.getPageName() + ' so please delete it. ~~~~');
+					talk_page.setCreateOption('recreate');
+					talk_page.setFollowRedirect(true);
+					talk_page.setWatchlist(params.watch);
+					talk_page.setChangeTags(Twinkle.changeTags);
+					talk_page.setCallbackParameters(params);
+					talk_page.newSection(Twinkle.speedy.callbacks.user.tagComplete);
+				} else {
+					pageobj.getStatusElement().error('Page protected and nowhere to add an edit request, aborting');
 				}
 			}
-			pageobj.save(Twinkle.speedy.callbacks.user.tagComplete);
 		},
 
 		tagComplete: function(pageobj) {
@@ -1578,39 +1444,16 @@ Twinkle.speedy.callbacks = {
 			}
 		},
 
-		// note: this code is also invoked from twinkleimage
-		// the params used are:
-		//   for CSD: params.values, params.normalizeds  (note: normalizeds is an array)
-		//   for DI: params.fromDI = true, params.templatename, params.normalized  (note: normalized is a string)
 		addToLog: function(params, initialContrib) {
 			var usl = new Morebits.userspaceLogger(Twinkle.getPref('speedyLogPageName'));
 			usl.initialText =
-				"This is a log of all [[WP:CSD|speedy deletion]] nominations made by this user using [[WP:TW|Twinkle]]'s CSD module.\n\n" +
-				'If you no longer wish to keep this log, you can turn it off using the [[Wikipedia:Twinkle/Preferences|preferences panel]], and ' +
-				'nominate this page for speedy deletion under [[WP:CSD#U1|CSD U1]].' +
+				"This is a log of all [[COM:CSD|speedy deletion]] nominations made by this user using [[COM:TW|Twinkle]]'s CSD module.\n\n" +
+				'If you no longer wish to keep this log, you can turn it off using the [[Commons:Twinkle/Preferences|preferences panel]], and ' +
+				'nominate this page for speedy deletion under [[COM:CSD#U1|CSD U1]].' +
 				(Morebits.userIsSysop ? '\n\nThis log does not track outright speedy deletions made using Twinkle.' : '');
 
 			var formatParamLog = function(normalize, csdparam, input) {
-				if ((normalize === 'G4' && csdparam === 'xfd') ||
-					(normalize === 'G6' && csdparam === 'page') ||
-					(normalize === 'G6' && csdparam === 'fullvotepage') ||
-					(normalize === 'G6' && csdparam === 'sourcepage') ||
-					(normalize === 'A2' && csdparam === 'source') ||
-					(normalize === 'A10' && csdparam === 'article') ||
-					(normalize === 'F1' && csdparam === 'filename') ||
-					(normalize === 'F5' && csdparam === 'replacement')) {
-					input = '[[:' + input + ']]';
-				} else if (normalize === 'G5' && csdparam === 'user') {
-					input = '[[:User:' + input + ']]';
-				} else if (normalize === 'G12' && csdparam.lastIndexOf('url', 0) === 0 && input.lastIndexOf('http', 0) === 0) {
-					input = '[' + input + ' ' + input + ']';
-				} else if (normalize === 'T3' && csdparam === 'template') {
-					input = '[[:Template:' + input + ']]';
-				} else if (normalize === 'F8' && csdparam === 'filename') {
-					input = '[[commons:' + input + ']]';
-				} else if (normalize === 'P1' && csdparam === 'criterion') {
-					input = '[[WP:CSD#' + input + ']]';
-				}
+				input = '[[:' + input + ']]';
 				return ' {' + normalize + ' ' + csdparam + ': ' + input + '}';
 			};
 
@@ -1620,65 +1463,45 @@ Twinkle.speedy.callbacks = {
 			var fileLogLink = mw.config.get('wgNamespaceNumber') === 6 ? ' ([{{fullurl:Special:Log|page=' + mw.util.wikiUrlencode(mw.config.get('wgPageName')) + '}} log])' : '';
 
 			var editsummary = 'Logging speedy deletion nomination';
-			var appendText = '# [[:' + Morebits.pageNameNorm;
+			var appendText = '# [[:' + Morebits.pageNameNorm + ']]. ';
 
-			if (params.fromDI) {
-				appendText += ']]' + fileLogLink + ': DI [[WP:CSD#' + params.normalized.toUpperCase() + '|CSD ' + params.normalized.toUpperCase() + ']] ({{tl|di-' + params.templatename + '}})';
-				// The params data structure when coming from DI is quite different,
-				// so this hardcodes the only interesting items worth logging
-				['reason', 'replacement', 'source'].forEach(function(item) {
-					if (params[item]) {
-						extraInfo += formatParamLog(params.normalized.toUpperCase(), item, params[item]);
-						return false;
-					}
+			if (params.normalizeds.length > 1) {
+				appendText += 'multiple criteria (';
+				$.each(params.normalizeds, function(index, norm) {
+					appendText += '[[COM:CSD#' + norm.toUpperCase() + '|' + norm.toUpperCase() + ']], ';
 				});
-				editsummary += ' of [[:' + Morebits.pageNameNorm + ']].';
+				appendText = appendText.substr(0, appendText.length - 2);  // remove trailing comma
+				appendText += ')';
+			} else if (params.normalizeds[0] === 'db') {
+				appendText += '{{tl|db-reason}}';
 			} else {
-				if (params.normalizeds.indexOf('g10') === -1) {  // no article name in log for G10 taggings
-					appendText += ']]' + fileLogLink + ': ';
-					editsummary += ' of [[:' + Morebits.pageNameNorm + ']].';
+				appendText += '[[COM:CSD#' + params.normalizeds[0].toUpperCase() + '|CSD ' + params.normalizeds[0].toUpperCase() + ']] ({{tl|db-' + params.values[0] + '}})';
+			}
+
+			// If params is "empty" it will still be full of empty arrays, but ask anyway
+			if (params.templateParams) {
+				// Treat custom rationale individually
+				if (params.normalizeds[0] && params.normalizeds[0] === 'db') {
+					extraInfo += formatParamLog('Custom', 'rationale', params.templateParams[0]['1']);
 				} else {
-					appendText += '|This]] attack page' + fileLogLink + ': ';
-					editsummary += ' of an attack page.';
-				}
-				if (params.normalizeds.length > 1) {
-					appendText += 'multiple criteria (';
-					$.each(params.normalizeds, function(index, norm) {
-						appendText += '[[WP:CSD#' + norm.toUpperCase() + '|' + norm.toUpperCase() + ']], ';
+					params.templateParams.forEach(function(item, index) {
+						var keys = Object.keys(item);
+						if (keys[0] !== undefined && keys[0].length > 0) {
+							// Second loop required since some items (G12, F9) may have multiple keys
+							keys.forEach(function(key, keyIndex) {
+								if (keys[keyIndex] === 'blanked' || keys[keyIndex] === 'ts') {
+									return true; // Not worth logging
+								}
+								extraInfo += formatParamLog(params.normalizeds[index].toUpperCase(), keys[keyIndex], item[key]);
+							});
+						}
 					});
-					appendText = appendText.substr(0, appendText.length - 2);  // remove trailing comma
-					appendText += ')';
-				} else if (params.normalizeds[0] === 'db') {
-					appendText += '{{tl|db-reason}}';
-				} else {
-					appendText += '[[WP:CSD#' + params.normalizeds[0].toUpperCase() + '|CSD ' + params.normalizeds[0].toUpperCase() + ']] ({{tl|db-' + params.values[0] + '}})';
-				}
-
-				// If params is "empty" it will still be full of empty arrays, but ask anyway
-				if (params.templateParams) {
-					// Treat custom rationale individually
-					if (params.normalizeds[0] && params.normalizeds[0] === 'db') {
-						extraInfo += formatParamLog('Custom', 'rationale', params.templateParams[0]['1']);
-					} else {
-						params.templateParams.forEach(function(item, index) {
-							var keys = Object.keys(item);
-							if (keys[0] !== undefined && keys[0].length > 0) {
-								// Second loop required since some items (G12, F9) may have multiple keys
-								keys.forEach(function(key, keyIndex) {
-									if (keys[keyIndex] === 'blanked' || keys[keyIndex] === 'ts') {
-										return true; // Not worth logging
-									}
-									extraInfo += formatParamLog(params.normalizeds[index].toUpperCase(), keys[keyIndex], item[key]);
-								});
-							}
-						});
-					}
 				}
 			}
 
-			if (params.requestsalt) {
-				appendText += '; requested creation protection ([[WP:SALT|salting]])';
-			}
+			// if (params.requestsalt) {
+			// 	appendText += '; requested creation protection ([[WP:SALT|salting]])';
+			// }
 			if (extraInfo) {
 				appendText += '; additional information:' + extraInfo;
 			}
@@ -1700,7 +1523,7 @@ Twinkle.speedy.getParameters = function twinklespeedyGetParameters(form, values)
 	$.each(values, function(index, value) {
 		var currentParams = [];
 		switch (value) {
-			case 'reason':
+			case 'reason': // db
 				if (form['csd.reason_1']) {
 					var dbrationale = form['csd.reason_1'].value;
 					if (!dbrationale || !dbrationale.trim()) {
@@ -1709,6 +1532,123 @@ Twinkle.speedy.getParameters = function twinklespeedyGetParameters(form, values)
 						return false;
 					}
 					currentParams['1'] = dbrationale;
+				}
+				break;
+
+			case 'copyvio':
+				if (form['csd.imgcopyvio_url']) {
+					var url = form['csd.imgcopyvio_url'].value;
+					if (url) {
+						currentParams.source = url;
+					}
+				}
+				if (form['csd.imgcopyvio_rationale']) {
+					var rationale = form['csd.imgcopyvio_rationale'].value;
+					if (rationale) {
+						currentParams['1'] = rationale;
+					}
+				}
+				break;
+
+			case 'logo':
+				break;
+
+			case 'fairuse':
+				if (form['csd.fairuse_rationale']) {
+					var rationale = form['csd.fairuse_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
+				}
+				break;
+
+			case 'deriv':
+				if (form['csd.deriv_rationale']) {
+					var rationale = form['csd.deriv_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
+				}
+				break;
+
+			case 'lrfailed':
+				if (form['csd.lrfailed_rationale']) {
+					var rationale = form['csd.lrfailed_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
+				}
+				break;
+
+			case 'vrt':
+				if (form['csd.vrt_rationale']) {
+					var rationale = form['csd.vrt_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
+				}
+				break;
+
+			case 'll':
+				if (form['csd.ll_rationale']) {
+					var rationale = form['csd.ll_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
+				}
+				break;
+
+			case 'noimage':
+				if (form['csd.noimage_rationale']) {
+					var rationale = form['csd.noimage_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
+				}
+				break;
+
+			case 'duplicate':
+				if (form['csd.duplicate_filename']) {
+					var rationale = form['csd.duplicate_filename'].value;
+					if (rationale) {
+						currentParams['1'] = rationale;
+					}
+				}
+				break;
+
+			case 'embeddeddata':
+				if (form['csd.embeddeddata_rationale']) {
+					var rationale = form['csd.embeddeddata_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
+				}
+				break;
+
+			case 'selfie':
+				if (form['csd.selfie_rationale']) {
+					var rationale = form['csd.selfie_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
+				}
+				break;
+
+			case 'catbadname':
+				if (form['csd.catbadname_name']) {
+					var correctName = form['csd.catbadname_name'];
+					if (correctName) {
+						currentParams['2'] = correctName;
+					}
+				}
+				break;
+
+			case 'catempty':
+				if (form['csd.catempty_rationale']) {
+					var rationale = form['csd.catempty_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
 				}
 				break;
 
@@ -1721,7 +1661,46 @@ Twinkle.speedy.getParameters = function twinklespeedyGetParameters(form, values)
 						parameters = null;
 						return false;
 					}
-					currentParams.rationale = u1rationale;
+					currentParams['2'] = u1rationale;
+				}
+				break;
+
+			case 'inappuserspace':
+				if (form['csd.inappuserspace_rationale']) {
+					var rationale = form['csd.inappuserspace_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
+				}
+				break;
+
+			case 't1':
+				if (form['csd.t1_rationale']) {
+					var t1rationale = form['csd.t1_rationale'].value;
+					if (!t1rationale || !t1rationale.trim()) {
+						alert('CSD T1:  Please include the template that this duplicates here.');
+						parameters = null;
+						return false;
+					}
+					currentParams['2'] = t1rationale;
+				}
+				break;
+
+			case 't2':
+				if (form['csd.t2_rationale']) {
+					var rationale = form['csd.t2_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
+				}
+				break;
+
+			case 'vandalism':
+				if (form['csd.vandalism_rationale']) {
+					var rationale = form['csd.vandalism_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
 				}
 				break;
 
@@ -1729,209 +1708,56 @@ Twinkle.speedy.getParameters = function twinklespeedyGetParameters(form, values)
 				if (form['csd.repost_xfd']) {
 					var deldisc = form['csd.repost_xfd'].value;
 					if (deldisc) {
-						if (!/^(?:wp|wikipedia):/i.test(deldisc)) {
-							alert('CSD G4:  The deletion discussion page name, if provided, must start with "Wikipedia:".');
-							parameters = null;
-							return false;
-						}
-						currentParams.xfd = deldisc;
+						currentParams['2'] = '[[' + deldisc + ']]';
 					}
 				}
 				break;
 
-			case 'banned':  // G5
-				if (form['csd.banned_user'] && form['csd.banned_user'].value) {
-					currentParams.user = form['csd.banned_user'].value.replace(/^\s*User:/i, '');
+			case 'g6':
+				if (form['csd.g6_rationale']) {
+					var rationale = form['csd.g6_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
 				}
 				break;
 
-			case 'move':  // G6
-				if (form['csd.move_page'] && form['csd.move_reason']) {
-					var movepage = form['csd.move_page'].value,
-						movereason = form['csd.move_reason'].value;
-					if (!movepage || !movepage.trim()) {
-						alert('CSD G6 (move):  Please specify the page to be moved here.');
+			case 'author':
+				if (form['csd.author_rationale']) {
+					var rationale = form['csd.author_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
+				}
+				break;
+
+			case 'g8':
+				if (form['csd.g8_rationale']) {
+					var rationale = form['csd.g8_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
+				}
+				break;
+
+			case 'advert':
+				if (form['csd.advert_rationale']) {
+					var rationale = form['csd.advert_rationale'].value;
+					if (rationale) {
+						currentParams['2'] = rationale;
+					}
+				}
+				break;
+
+			case 'textcopyvio':
+				if (form['csd.textcopyvio_rationale']) {
+					var rationale = form['csd.textcopyvio_rationale'].value;
+					if (!rationale || !rationale.trim()) {
+						alert('CSD G11:  Include the URL or source of the copyvio');
 						parameters = null;
 						return false;
 					}
-					if (!movereason || !movereason.trim()) {
-						alert('CSD G6 (move):  Please specify the reason for the move.');
-						parameters = null;
-						return false;
-					}
-					currentParams.page = movepage;
-					currentParams.reason = movereason;
-				}
-				break;
-
-			case 'xfd':  // G6
-				if (form['csd.xfd_fullvotepage']) {
-					var xfd = form['csd.xfd_fullvotepage'].value;
-					if (xfd) {
-						if (!/^(?:wp|wikipedia):/i.test(xfd)) {
-							alert('CSD G6 (XFD):  The deletion discussion page name, if provided, must start with "Wikipedia:".');
-							parameters = null;
-							return false;
-						}
-						currentParams.fullvotepage = xfd;
-					}
-				}
-				break;
-
-			case 'copypaste':  // G6
-				if (form['csd.copypaste_sourcepage']) {
-					var copypaste = form['csd.copypaste_sourcepage'].value;
-					if (!copypaste || !copypaste.trim()) {
-						alert('CSD G6 (copypaste):  Please specify the source page name.');
-						parameters = null;
-						return false;
-					}
-					currentParams.sourcepage = copypaste;
-				}
-				break;
-
-			case 'g6':  // G6
-				if (form['csd.g6_rationale'] && form['csd.g6_rationale'].value) {
-					currentParams.rationale = form['csd.g6_rationale'].value;
-				}
-				break;
-
-			case 'author':  // G7
-				if (form['csd.author_rationale'] && form['csd.author_rationale'].value) {
-					currentParams.rationale = form['csd.author_rationale'].value;
-				}
-				break;
-
-			case 'g8':  // G8
-				if (form['csd.g8_rationale'] && form['csd.g8_rationale'].value) {
-					currentParams.rationale = form['csd.g8_rationale'].value;
-				}
-				break;
-
-			case 'templatecat':  // G8
-				if (form['csd.templatecat_rationale'] && form['csd.templatecat_rationale'].value) {
-					currentParams.rationale = form['csd.templatecat_rationale'].value;
-				}
-				break;
-
-			case 'attack':  // G10
-				currentParams.blanked = 'yes';
-				// it is actually blanked elsewhere in code, but setting the flag here
-				break;
-
-			case 'copyvio':  // G12
-				if (form['csd.copyvio_url'] && form['csd.copyvio_url'].value) {
-					currentParams.url = form['csd.copyvio_url'].value;
-				}
-				if (form['csd.copyvio_url2'] && form['csd.copyvio_url2'].value) {
-					currentParams.url2 = form['csd.copyvio_url2'].value;
-				}
-				if (form['csd.copyvio_url3'] && form['csd.copyvio_url3'].value) {
-					currentParams.url3 = form['csd.copyvio_url3'].value;
-				}
-				break;
-
-			case 'afc':  // G13
-				currentParams.ts = '$TIMESTAMP'; // to be replaced by the last revision timestamp when page is saved
-				break;
-
-			case 'redundantimage':  // F1
-				if (form['csd.redundantimage_filename']) {
-					var redimage = form['csd.redundantimage_filename'].value;
-					if (!redimage || !redimage.trim()) {
-						alert('CSD F1:  Please specify the filename of the other file.');
-						parameters = null;
-						return false;
-					}
-					currentParams.filename = /^\s*(Image|File):/i.test(redimage) ? redimage : 'File:' + redimage;
-				}
-				break;
-
-			case 'badfairuse':  // F7
-				if (form['csd.badfairuse_rationale'] && form['csd.badfairuse_rationale'].value) {
-					currentParams.rationale = form['csd.badfairuse_rationale'].value;
-				}
-				break;
-
-			case 'commons':  // F8
-				if (form['csd.commons_filename']) {
-					var filename = form['csd.commons_filename'].value;
-					if (filename && filename.trim() && filename !== Morebits.pageNameNorm) {
-						currentParams.filename = /^\s*(Image|File):/i.test(filename) ? filename : 'File:' + filename;
-					}
-				}
-				break;
-
-			case 'imgcopyvio':  // F9
-				if (form['csd.imgcopyvio_url'] && form['csd.imgcopyvio_rationale']) {
-					var f9url = form['csd.imgcopyvio_url'].value;
-					var f9rationale = form['csd.imgcopyvio_rationale'].value;
-					if ((!f9url || !f9url.trim()) && (!f9rationale || !f9rationale.trim())) {
-						alert('CSD F9: You must enter a url or reason (or both) when nominating a file under F9.');
-						parameters = null;
-						return false;
-					}
-					if (form['csd.imgcopyvio_url'].value) {
-						currentParams.url = f9url;
-					}
-					if (form['csd.imgcopyvio_rationale'].value) {
-						currentParams.rationale = f9rationale;
-					}
-				}
-				break;
-
-			case 'foreign':  // A2
-				if (form['csd.foreign_source']) {
-					var foreignlink = form['csd.foreign_source'].value;
-					if (!foreignlink || !foreignlink.trim()) {
-						alert('CSD A2:  Please specify an interwiki link to the article of which this is a copy.');
-						parameters = null;
-						return false;
-					}
-					currentParams.source = foreignlink;
-				}
-				break;
-
-			case 'transwiki':  // A5
-				if (form['csd.transwiki_location'] && form['csd.transwiki_location'].value) {
-					currentParams.location = form['csd.transwiki_location'].value;
-				}
-				break;
-
-			case 'a10':  // A10
-				if (form['csd.a10_article']) {
-					var duptitle = form['csd.a10_article'].value;
-					if (!duptitle || !duptitle.trim()) {
-						alert('CSD A10:  Please specify the name of the article which is duplicated.');
-						parameters = null;
-						return false;
-					}
-					currentParams.article = duptitle;
-				}
-				break;
-
-			case 'duplicatetemplate':  // T3
-				if (form['csd.duplicatetemplate_2']) {
-					var t3template = form['csd.duplicatetemplate_2'].value;
-					if (!t3template || !t3template.trim()) {
-						alert('CSD T3:  Please specify the name of a template duplicated by this one.');
-						parameters = null;
-						return false;
-					}
-					currentParams.ts = '~~~~~';
-					currentParams.template = t3template.replace(/^\s*Template:/i, '');
-				}
-				break;
-
-			case 'p1':  // P1
-				if (form['csd.p1_criterion']) {
-					var criterion = form['csd.p1_criterion'].value;
-					if (!criterion || !criterion.trim()) {
-						alert('CSD P1:  Please specify a single criterion.');
-						parameters = null;
-						return false;
-					}
-					currentParams.criterion = criterion;
+					currentParams['2'] = rationale;
 				}
 				break;
 
@@ -1949,55 +1775,26 @@ Twinkle.speedy.getParameters = function twinklespeedyGetParameters(form, values)
 Twinkle.speedy.getUserTalkParameters = function twinklespeedyGetUserTalkParameters(normalized, parameters) {
 	var utparams = [];
 
-	// Special cases
-	if (normalized === 'db') {
-		utparams['2'] = parameters['1'];
-	} else if (normalized === 'g6') {
-		utparams.key1 = 'to';
-		utparams.value1 = Morebits.pageNameNorm;
-	} else if (normalized === 'g12') {
-		['url', 'url2', 'url3'].forEach(function(item, idx) {
-			if (parameters[item]) {
-				idx++;
-				utparams['key' + idx] = item;
-				utparams['value' + idx] = utparams[item] = parameters[item];
-			}
-		});
-	} else {
-		// Handle the rest
-		var param;
-		switch (normalized) {
-			case 'g4':
-				param = 'xfd';
-				break;
-			case 'a2':
-				param = 'source';
-				break;
-			case 'a5':
-				param = 'location';
-				break;
-			case 'a10':
-				param = 'article';
-				break;
-			case 'f9':
-				param = 'url';
-				break;
-			case 'p1':
-				param = 'criterion';
-				break;
-			default:
-				break;
-		}
-		// No harm in providing a usertalk template with the others' parameters
-		if (param && parameters[param]) {
-			utparams.key1 = param;
-			utparams.value1 = utparams[param] = parameters[param];
-		}
+	switch (normalized) {
+		case 'db': // Speedydelete and Speedynote
+			utparams.reason = parameters['1'];
+			break;
+		case 'f1': // Copyvio and Copyvionote
+			utparams.source = parameters.source;
+			utparams.reason = parameters['1'];
+			break;
+		default: // SD and Speedynote
+			utparams['2'] = parameters['2'];
+			break;
 	}
+
 	return utparams;
 };
 
-
+/**
+ * @param {Event} e
+ * @returns {Array}
+ */
 Twinkle.speedy.resolveCsdValues = function twinklespeedyResolveCsdValues(e) {
 	var values = (e.target.form ? e.target.form : e.target).getChecked('csd');
 	if (values.length === 0) {
@@ -2038,35 +1835,21 @@ Twinkle.speedy.callback.evaluateSysop = function twinklespeedyCallbackEvaluateSy
 	var watchPage, promptForSummary;
 	normalizeds.forEach(function(norm) {
 		if (Twinkle.getPref('watchSpeedyPages').indexOf(norm) !== -1) {
-			watchPage = true;
+			watchPage = Twinkle.getPref('watchSpeedyExpiry');
 		}
 		if (Twinkle.getPref('promptForSpeedyDeletionSummary').indexOf(norm) !== -1) {
 			promptForSummary = true;
 		}
 	});
 
-	var warnusertalk = false;
-	if (form.warnusertalk.checked) {
-		$.each(normalizeds, function(index, norm) {
-			if (Twinkle.getPref('warnUserOnSpeedyDelete').indexOf(norm) !== -1) {
-				if (norm === 'g6' && values[index] !== 'copypaste') {
-					return true;
-				}
-				warnusertalk = true;
-				return false;  // break
-			}
-		});
-	}
+	var warnusertalk = form.warnusertalk.checked && normalizeds.some(function (norm, index) {
+		return Twinkle.getPref('warnUserOnSpeedyDelete').indexOf(norm) !== -1 &&
+			!(norm === 'g6' && values[index] !== 'copypaste');
+	});
 
-	var welcomeuser = false;
-	if (warnusertalk) {
-		$.each(normalizeds, function(index, norm) {
-			if (Twinkle.getPref('welcomeUserOnSpeedyDeletionNotification').indexOf(norm) !== -1) {
-				welcomeuser = true;
-				return false;  // break
-			}
-		});
-	}
+	var welcomeuser = warnusertalk && normalizeds.some(function (norm) {
+		return Twinkle.getPref('welcomeUserOnSpeedyDeletionNotification').indexOf(norm) !== -1;
+	});
 
 	var params = {
 		values: values,
@@ -2104,54 +1887,26 @@ Twinkle.speedy.callback.evaluateUser = function twinklespeedyCallbackEvaluateUse
 	}
 
 	// var multiple = form.multiple.checked;
-	var normalizeds = [];
-	$.each(values, function(index, value) {
-		var norm = Twinkle.speedy.normalizeHash[value];
 
-		normalizeds.push(norm);
+	var normalizeds = values.map(function(value) {
+		return Twinkle.speedy.normalizeHash[value];
 	});
 
 	// analyse each criterion to determine whether to watch the page/notify the creator
-	var watchPage = false;
-	$.each(normalizeds, function(index, norm) {
-		if (Twinkle.getPref('watchSpeedyPages').indexOf(norm) !== -1) {
-			watchPage = true;
-			return false;  // break
-		}
+	var watchPage = normalizeds.some(function(csdCriteria) {
+		return Twinkle.getPref('watchSpeedyPages').indexOf(csdCriteria) !== -1;
+	}) && Twinkle.getPref('watchSpeedyExpiry');
+
+	var notifyuser = form.notify.checked && normalizeds.some(function(norm, index) {
+		return Twinkle.getPref('notifyUserOnSpeedyDeletionNomination').indexOf(norm) !== -1 &&
+			!(norm === 'g6' && values[index] !== 'copypaste');
 	});
-
-	var notifyuser = false;
-	if (form.notify.checked) {
-		$.each(normalizeds, function(index, norm) {
-			if (Twinkle.getPref('notifyUserOnSpeedyDeletionNomination').indexOf(norm) !== -1) {
-				if (norm === 'g6' && values[index] !== 'copypaste') {
-					return true;
-				}
-				notifyuser = true;
-				return false;  // break
-			}
-		});
-	}
-
-	var welcomeuser = false;
-	if (notifyuser) {
-		$.each(normalizeds, function(index, norm) {
-			if (Twinkle.getPref('welcomeUserOnSpeedyDeletionNotification').indexOf(norm) !== -1) {
-				welcomeuser = true;
-				return false;  // break
-			}
-		});
-	}
-
-	var csdlog = false;
-	if (Twinkle.getPref('logSpeedyNominations')) {
-		$.each(normalizeds, function(index, norm) {
-			if (Twinkle.getPref('noLogOnSpeedyNomination').indexOf(norm) === -1) {
-				csdlog = true;
-				return false;  // break
-			}
-		});
-	}
+	var welcomeuser = notifyuser && normalizeds.some(function(norm) {
+		return Twinkle.getPref('welcomeUserOnSpeedyDeletionNotification').indexOf(norm) !== -1;
+	});
+	var csdlog = Twinkle.getPref('logSpeedyNominations') && normalizeds.some(function(norm) {
+		return Twinkle.getPref('noLogOnSpeedyNomination').indexOf(norm) === -1;
+	});
 
 	var params = {
 		values: values,
@@ -2160,7 +1915,7 @@ Twinkle.speedy.callback.evaluateUser = function twinklespeedyCallbackEvaluateUse
 		usertalk: notifyuser,
 		welcomeuser: welcomeuser,
 		lognomination: csdlog,
-		requestsalt: form.salting.checked,
+		// requestsalt: form.salting.checked,
 		templateParams: templateParams
 	};
 
@@ -2170,9 +1925,7 @@ Twinkle.speedy.callback.evaluateUser = function twinklespeedyCallbackEvaluateUse
 	Morebits.wiki.actionCompleted.redirect = mw.config.get('wgPageName');
 	Morebits.wiki.actionCompleted.notice = 'Tagging complete';
 
-	// Modules can't be tagged, follow standard at TfD and place on /doc subpage
-	params.scribunto = mw.config.get('wgPageContentModel') === 'Scribunto';
-	var wikipedia_page = params.scribunto ? new Morebits.wiki.page(mw.config.get('wgPageName') + '/doc', 'Tagging module documentation page') : new Morebits.wiki.page(mw.config.get('wgPageName'), 'Tagging page');
+	var wikipedia_page = new Morebits.wiki.page(mw.config.get('wgPageName'), 'Tagging page');
 	wikipedia_page.setChangeTags(Twinkle.changeTags); // Here to apply to triage
 	wikipedia_page.setCallbackParameters(params);
 	wikipedia_page.load(Twinkle.speedy.callbacks.user.main);

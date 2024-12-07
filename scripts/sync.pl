@@ -6,7 +6,9 @@ use warnings;
 
 use English qw(-no_match_vars);
 use utf8;
+use Cwd qw(cwd abs_path);
 use FindBin qw($Bin);
+use File::Spec::Functions qw(rel2abs abs2rel);
 use Getopt::Long;
 use Term::ANSIColor;
 
@@ -15,21 +17,26 @@ use Git::Repository;
 use MediaWiki::API;
 use File::Slurper qw(read_text write_text);
 
+# Save original directory, for relative paths of files
+my $origDir = cwd();
+# Move to top of repository
+# Could do with git rev-parse --show-toplevel, but this is fine
+chdir "$Bin/../" or die "$ERRNO\n";
 
 # Default config values, mode is intentionally absent
 my %conf = (
             username => q{},
             password => q{},
             mode => q{},
-            lang => 'en',
-            family => 'wikipedia',
+            lang => 'commons',
+            family => 'wikimedia',
             url => q{},
-            base => 'User:AzaToth/'
+            base => 'User:Mdaniels5757/'
            );
 
 my $rc = '.twinklerc';
-# Check script directory and ~ (home) for config file, preferring the former
-my @dotLocales = map { $_.q{/}.$rc } ($Bin, $ENV{HOME});
+# Check repo directory and ~ (home) for config file, preferring the former
+my @dotLocales = map { $_.q{/}.$rc } (cwd(), $ENV{HOME});
 foreach my $dot (@dotLocales) {
   if (-e -f -r $dot) {
     # Preserve default options if not present in twinklerc
@@ -42,7 +49,7 @@ foreach my $dot (@dotLocales) {
 
 GetOptions (\%conf, 'username|s=s', 'password|p=s', 'mode|m=s',
             'lang|l=s','family|f=s', 'url|u=s', 'base|b=s',
-            'all|a', 'append|a=s', 'diff|d', 'w=s', 'dry|r', 'help|h' => \&usage);
+            'all|a', 'summary|y=s', 'append|e=s', 'diff|d', 'w=s', 'dry|r', 'help|h' => \&usage);
 
 # Ensure we've got a clean branch
 my $repo = Git::Repository->new();
@@ -53,7 +60,7 @@ if (scalar @status) {
 }
 
 # Make sure we know what we're doing before doing it
-# Checks for required parameters, returns list of files (@ARGV or --all)
+# Checks for required parameters, returns list of files (from @ARGV or --all)
 my @files = forReal();
 
 # Open API and log in before anything else
@@ -77,7 +84,7 @@ if (@files) {
     if ($page =~ /^twinkle/) {
       $page =~ s/^twinkle\b/Twinkle/; # twinkle.js, etc. files are capitalized on-wiki
     } else {
-      $page =~ s/\w+\///;       # Remove directories (modules/, select2/)
+      $page =~ s/\w+\///;       # Remove directories (modules/, lib/)
     }
     $page = $conf{base}.$page; # base set to MediaWiki:Gadget- for deploy in &forReal
 
@@ -111,7 +118,7 @@ if (@files) {
 
     print "\n\t";
     if ($conf{mode} eq 'deploy' || $conf{mode} eq 'push') {
-      my $summary = buildEditSummary($page, $file, $wikiPage->{comment});
+      my $summary = buildEditSummary($page, $file, $wikiPage->{comment}, $wikiPage->{timestamp}, $wikiPage->{user});
       my $editReturn = editPage($page, $fileText, $summary, $wikiPage->{timestamp});
       if ($editReturn->{_msg} eq 'OK') {
         print colored ['green'], "$file successfully $conf{mode}ed to $page";
@@ -156,7 +163,7 @@ if ($conf{mode} eq 'deploy') {
     $wikiGadgetDef .= $wg[$_]."\n";
   }
 
-  my $gadgetFile = 'Gadget.md';
+  my $gadgetFile = 'gadget.txt';
   my $localGadgetDef = read_text($gadgetFile);
   if ($wikiGadgetDef eq $localGadgetDef) {
     print "Gadget up-to-date\n";
@@ -175,8 +182,6 @@ if ($conf{mode} eq 'deploy') {
 
 ### SUBROUTINES
 # Check that everything is in order
-# Data::Dumper is simpler but the output is ugly, and this ain't worth another
-# dependency
 sub forReal {
   my @meaningful = qw (mode lang family);
   push @meaningful, 'url' if $conf{url};
@@ -209,12 +214,18 @@ sub forReal {
   } else {
     # Confirm files are valid
     my %checkFiles = map { $_ => 1 } @allFiles;
-    foreach my $arg (@ARGV) {
-      if (!$checkFiles{$arg}) {
-        print colored ['yellow'], "$arg not defined as part of the gadget, skipping\n";
+    foreach my $file (@ARGV) {
+      # Adjust path for being run from anywhere to main repo directory
+      # 1. Make path absolute, relative to the directory from which the script was run
+      # 2. Clean it up (../, etc.)
+      # 3. Make it relative again
+      $file = abs2rel(abs_path(rel2abs($file, $origDir)));
+
+      if (!$checkFiles{$file}) {
+        print colored ['yellow'], "$file not defined as part of the gadget, skipping\n";
         next;
       }
-      push @inputs, $arg;
+      push @inputs, $file;
     }
 
     if (!@inputs) {
@@ -309,47 +320,50 @@ sub checkPage {
 # Tries to figure out a good edit summary by using the last one onwiki to find
 # the latest changes; prompts user if it can't find a commit hash
 sub buildEditSummary {
-  my ($page, $file, $oldCommitish) = @_;
+  my ($page, $file, $oldCommitish, $timestamp, $user) = @_;
   my $editSummary;
-  # User:Amorymeltzer & User:MusikAnimal or User:Amalthea et al.
-  if ($oldCommitish =~ /(?:Repo|v2\.0) at (\w*?): / || $oldCommitish =~ /v2\.0-\d+-g(\w*?): /) {
-    # Ensure it's a valid commit and no errors are reported back
-    my $valid = $repo->command('merge-base' => '--is-ancestor', "$1", 'HEAD');
-    my @validE = $valid->stderr->getlines();
-    $valid->close();
-    if (!scalar @validE) {
-      my $newLog = $repo->run(log => '--oneline', '--no-merges', '--no-color', "$1..HEAD", $file);
-      open my $nl, '<', \$newLog or die colored ['red'], "$ERRNO\n";
-      while (<$nl>) {
-	chomp;
-	my @arr = split / /, $_, 2;
-	if ($arr[1] =~ /(\S+(?:\.(?:js|css))?) ?[:|-] ?(.+)/) {
-	  my $fixPer = $2;
-	  $fixPer =~ s/\.$//;   # Just in case
-	  $editSummary .= "$fixPer; ";
-	}
+  if ($conf{summary}) {
+      $editSummary = $conf{summary};
+    } else {
+      # User:Amorymeltzer & User:MusikAnimal or User:Amalthea et al.
+      if ($oldCommitish =~ /(?:Repo|v2\.0) at (\w*?): / || $oldCommitish =~ /v2\.0-\d+-g(\w*?): /) {
+        # Ensure it's a valid commit and no errors are reported back
+        my $valid = $repo->command('merge-base' => '--is-ancestor', "$1", 'HEAD');
+        my @validE = $valid->stderr->getlines();
+        $valid->close();
+        if (!scalar @validE) {
+          my $newLog = $repo->run(log => '--oneline', '--no-merges', '--no-color', "$1..HEAD", $file);
+          open my $nl, '<', \$newLog or die colored ['red'], "$ERRNO\n";
+          while (<$nl>) {
+            chomp;
+            my @arr = split / /, $_, 2;
+            # Remove leading file names, trailing period
+            my $portion = $arr[1] =~ s/^\S+(?::| -) //r;
+            $portion =~ s/\.$//;
+            $editSummary .= "$portion; ";
+          }
+          close $nl or die colored ['red'], "$ERRNO\n";
+        }
       }
-      close $nl or die colored ['red'], "$ERRNO\n";
-    }
-  }
 
-  # Prompt for manual entry
-  if (!$editSummary) {
-    my @log = $repo->run(log => '-5', '--pretty=format:%s (%h)', '--no-merges', '--no-color', $file);
-    print colored ['yellow'], "Unable to autogenerate edit summary for $page\n\n";
-    print "The most recent ON-WIKI edit summary is:\n";
-    print colored ['bright_cyan'], "\t$oldCommitish\n";
-    print "The most recent GIT LOG entries are:\n";
-    foreach (@log) {
-      print colored ['bright_cyan'], "\t$_\n";
+      # Prompt for manual entry
+      if (!$editSummary) {
+        my @log = $repo->run(log => '-5', '--pretty=format:%s (%h, %ad)', '--no-merges', '--no-color', '--date=short', $file);
+        print colored ['yellow'], "Unable to autogenerate edit summary for $page\n\n";
+        print "The most recent ON-WIKI edit summary is:\n";
+        print colored ['bright_cyan'], "\t$oldCommitish ($user, $timestamp))\n";
+        print "The most recent GIT LOG entries are:\n";
+        foreach (@log) {
+          print colored ['bright_cyan'], "\t$_\n";
+        }
+        print 'Please provide an edit summary (commit ref will be added automatically';
+        print ",\nas well as your appendation: $conf{append}" if $conf{append};
+        print "):\n";
+        $editSummary = <STDIN>;
+        chomp $editSummary;
+      }
     }
-    print 'Please provide an edit summary (commit ref will be added automatically';
-    print ",\nas well as your appendation: $conf{append}" if $conf{append};
-    print "):\n";
-    $editSummary = <STDIN>;
-    chomp $editSummary;
-  }
-  $editSummary =~ s/[\.; ]{1,2}$//; # Tidy
+  $editSummary =~ s/[\.; ]+$//; # Tidy
   $editSummary .= $conf{append} if $conf{append};
 
   # 'Repo at' will add 17 characters and MW truncates at 497 to allow for '...'
@@ -393,22 +407,22 @@ sub editPage {
 # Final line must be unindented?
 sub usage {
   print <<"USAGE";
-Usage: $PROGRAM_NAME --mode=deploy|pull|push -u username -p password [-l language] [-f family] [-u url=] [-b base] [--all] [--diff [-w diffprog]] [--dry] [-a append]
+Usage: $PROGRAM_NAME --mode=deploy|pull|push --username username --password password [--lang language] [--family family] [--url url] [--base base] [--all] [--diff [-w diffprog]] [--dry] [--summary summary] [--append append]
 
-    --mode What action to perform, one of deploy, pull, or push. Required.
+    --mode, -m What action to perform, one of deploy, pull, or push. Required.
         deploy: Push changes live to the gadget
         pull: Pull changes from base-prefixed location
         push: Push changes to base-prefixed location
 
-    --username, -u Username for account. Required.
+    --username, -s Username for account. Required.
     --password, -p Password for account. Required.
 
-    --lang, -l Target language, default 'en'
-    --family, -f Target family, default 'wikipedia'
+    --lang, -l Target language, default 'commons'
+    --family, -f Target family, default 'wikimedia'
 
     --all, -a Pass all available files, rather than just those on the commandline
 
-    --base, -b Base page prefix where on-wiki files exist, default 'User:AzaToth/'
+    --base, -b Base page prefix where on-wiki files exist, default 'User:Mdaniels5757/'
 
 Less common options:
 
@@ -419,7 +433,8 @@ Less common options:
 
     --url, -u Provide the full URL, replacing above options (https://{lang}.{family}.org).
 
-    --append, -a String to append to a push or deploy edit summary
+    --summary, -y String to use in place of autogenerated edit summary
+    --append, -e String to append to a push or deploy edit summary
 
     These options can be provided in a config file, .twinklerc, in either this script's
     or your home directory.  It should be a simple file consisting of keys and values:
@@ -436,31 +451,33 @@ USAGE
 ## The lines below do not represent Perl code, and are not examined by the
 ## compiler.  Rather, they are used by the --all option to simplify bulk
 ## updating all files.
+## Removed:
+#   modules/twinklearv.js
+#   modules/twinkleblock.js
+#   modules/twinkledeprod.js
+#   modules/twinkleprod.js
+#   modules/twinkleprotect.js
+#   modules/twinklewarn.js
+#   modules/twinklexfd.js
+#   modules/friendlyshared.js
+#   modules/friendlytag.js
+#   modules/friendlytalkback.js
+#   modules/friendlywelcome.js
+
 __DATA__
 twinkle.js
   twinkle.css
   twinkle-pagestyles.css
   morebits.js
   morebits.css
-  select2/select2.min.js
-  select2/select2.min.css
+  lib/select2.min.js
+  lib/select2.min.css
   modules/twinkleconfig.js
-  modules/twinklearv.js
   modules/twinklebatchdelete.js
   modules/twinklebatchprotect.js
   modules/twinklebatchundelete.js
-  modules/twinkleblock.js
-  modules/twinkledeprod.js
   modules/twinklediff.js
   modules/twinklefluff.js
-  modules/twinkleimage.js
-  modules/twinkleprod.js
-  modules/twinkleprotect.js
   modules/twinklespeedy.js
   modules/twinkleunlink.js
-  modules/twinklewarn.js
-  modules/twinklexfd.js
-  modules/friendlyshared.js
-  modules/friendlytag.js
-  modules/friendlytalkback.js
-  modules/friendlywelcome.js
+  modules/twinkleimage.js

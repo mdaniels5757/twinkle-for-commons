@@ -19,7 +19,7 @@ Twinkle.diff = function twinklediff() {
 	Twinkle.addPortletLink(mw.util.getUrl(mw.config.get('wgPageName'), {diff: 'cur', oldid: 'prev'}), 'Last', 'tw-lastdiff', 'Show most recent diff');
 
 	// Show additional tabs only on diff pages
-	if (mw.util.getParamValue('diff')) {
+	if (mw.config.get('wgDiffNewId')) {
 		Twinkle.addPortletLink(function() {
 			Twinkle.diff.evaluate(false);
 		}, 'Since', 'tw-since', 'Show difference between last diff and the revision made by previous user');
@@ -27,8 +27,7 @@ Twinkle.diff = function twinklediff() {
 			Twinkle.diff.evaluate(true);
 		}, 'Since mine', 'tw-sincemine', 'Show difference between last diff and my last revision');
 
-		var oldid = /oldid=(.+)/.exec($('#mw-diff-ntitle1').find('strong a').first().attr('href'))[1];
-		Twinkle.addPortletLink(mw.util.getUrl(mw.config.get('wgPageName'), {diff: 'cur', oldid: oldid}), 'Current', 'tw-curdiff', 'Show difference to current revision');
+		Twinkle.addPortletLink(mw.util.getUrl(mw.config.get('wgPageName'), {diff: 'cur', oldid: mw.config.get('wgDiffNewId')}), 'Current', 'tw-curdiff', 'Show difference to current revision');
 	}
 };
 
@@ -46,13 +45,14 @@ Twinkle.diff.evaluate = function twinklediffEvaluate(me) {
 		user = $(node).find('a').first().text();
 	}
 	var query = {
-		'prop': 'revisions',
-		'action': 'query',
-		'titles': mw.config.get('wgPageName'),
-		'rvlimit': 1,
-		'rvprop': [ 'ids', 'user' ],
-		'rvstartid': mw.config.get('wgCurRevisionId') - 1, // i.e. not the current one
-		'rvuser': user
+		prop: 'revisions',
+		action: 'query',
+		titles: mw.config.get('wgPageName'),
+		rvlimit: 1,
+		rvprop: [ 'ids', 'user' ],
+		rvstartid: mw.config.get('wgCurRevisionId') - 1, // i.e. not the current one
+		rvuser: user,
+		format: 'json'
 	};
 	Morebits.status.init(document.getElementById('mw-content-text'));
 	var wikipedia_api = new Morebits.wiki.api('Grabbing data of initial contributor', query, Twinkle.diff.callbacks.main);
@@ -62,8 +62,8 @@ Twinkle.diff.evaluate = function twinklediffEvaluate(me) {
 
 Twinkle.diff.callbacks = {
 	main: function(self) {
-		var xmlDoc = self.responseXML;
-		var revid = $(xmlDoc).find('rev').attr('revid');
+		var rev = self.response.query.pages[0].revisions;
+		var revid = rev && rev[0].revid;
 
 		if (!revid) {
 			self.statelem.error('no suitable earlier revision found, or ' + self.params.user + ' is the only contributor. Aborting.');

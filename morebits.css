@@ -5,7 +5,7 @@
  *
  * The morebits library is maintained by the maintainers of Twinkle.
  * For queries, suggestions, help, etc., head to [[WT:TW]].
- * The latest development source is available at [https://github.com/azatoth/twinkle/blob/master/morebits.css].
+ * The latest development source is available at [https://github.com/wikimedia-gadgets/twinkle/blob/master/morebits.css].
  */
 
 /* Morebits.status */
@@ -40,7 +40,6 @@ form.quickform
 form.quickform *
 {
 	font-family: sans-serif;
-	font-size: 12px;
 }
 
 form.quickform fieldset
@@ -69,8 +68,9 @@ form.quickform select
 form.quickform input[type=checkbox],
 form.quickform input[type=radio] {
 	height: 13px;
-	margin-bottom: 2px;
 	margin-top: 2px;
+	margin-right: 2px;
+	margin-bottom: 2px;
 	padding: 0;
 	width: 13px;
 	vertical-align: top;
@@ -84,6 +84,7 @@ form.quickform h5
 {
 	margin: .5em 0 0;
 	padding: .3em .2em .2em;
+	font-size: 108%; /* 100% is 12px => 108% is 12.96px */
 }
 
 /* only give the top border to headers with something above them */
@@ -107,6 +108,12 @@ form.quickform input:disabled + label
 form.quickform span.quickformDescription
 {
 	font-style: italic;
+}
+
+form.quickform span.quickformDescription code
+{
+	font-style: normal;
+	font-family: monospace;
 }
 
 form.quickform .quickformSubgroup
@@ -177,28 +184,44 @@ div.morebits-previewbox .mw-editsection
 	display: none;
 }
 
+div.morebits-usertext {
+	border: 1px solid #a2a9b1;
+	background-color: #f8f9fa;
+	padding: 5px;
+	font-size: 95%;
+}
+
 
 /* Morebits.simpleWindow */
 
 .morebits-dialog {
 	border: 1px #666 solid;
-	font: small sans-serif;
+	font-family: sans-serif;
 	background-color: #F0F8FF;
 	background-image: none;
+}
+
+/* px translations in comments are w.r.t standard browser settings,
+   in other settings, the sizes would be scaled accordingly */
+.skin-vector .morebits-dialog {
+	font-size: 75%; /* 100% is 16px => 75% is 12px */
+}
+.skin-timeless .morebits-dialog {
+	font-size: 79%; /* 100% is 15.2px => 79% is 12.008px */
+}
+.skin-monobook .morebits-dialog,
+.skin-modern .morebits-dialog {
+	font-size: 120%; /* 100% is 10px => 120% is 12px */
 }
 
 body .ui-dialog.morebits-dialog .ui-dialog-titlebar {
 	height: 1em;
 	background-color: #BCCADF !important;
 	background-image: none !important;
-	font: bold 1em sans-serif;
+	font: bold 108% sans-serif; /* 100% is 12px (from above) => 108% is 12.96px */
 	overflow: hidden;
 	padding: .4em .3em .5em !important;
 	white-space: nowrap;
-}
-
-body.skin-monobook .morebits-dialog .ui-dialog-titlebar {
-	line-height: 1em;
 }
 
 .morebits-dialog-scriptname {
@@ -234,8 +257,12 @@ body .ui-dialog.morebits-dialog .ui-dialog-buttonpane button {
 	cursor: auto;
 }
 
+.morebits-dialog-buttons {
+	font-size: 108%; /* 100% is 12px => 108% is 12.96px */
+}
+
 .morebits-dialog-footerlinks {
-	font-size: 90%;
+	font-size: 97%; /* 100% is 12px (from above) => 97% is 11.64px */
 	float: right;
 	margin: .7em .4em 0 0;
 }
@@ -254,4 +281,26 @@ body .ui-dialog.morebits-dialog .morebits-dialog-footerlinks a {
 
 .ui-icon-inline {
 	display: inline-block;
+}
+
+/* For styling message/warning boxes. Cannot use MediaWiki ombox class because it will be deprecated soon. */
+table.morebits-ombox {
+    margin: 4px 10%;
+    border-collapse: collapse;
+    border: 1px solid #a2a9b1;
+    background: #f8f9fa;
+    box-sizing: border-box;
+}
+table.morebits-ombox-content {
+    border: 1px solid #f28500;
+}
+td.morebits-mbox-image {
+    border: none;
+    padding: 2px 0 2px 0.9em;
+    text-align: center;
+}
+th.morebits-mbox-text, td.morebits-mbox-text {
+    border: none;
+    padding: 0.25em 0.9em;
+    width: 100%;
 }

@@ -1,15 +1,19 @@
 {
-	"plugins": ["es5"],
-	"extends": ["eslint:recommended", "plugin:es5/no-es2015"],
+	"parserOptions": {
+		"emcaVersion": 6
+	},
+	"extends": ["eslint:recommended"],
 	"root": true,
 	"env": {
 		"browser": true,
-		"jquery": true
+		"jquery": true,
+		"es6": true
 	},
 	"globals": {
-		"mw": "readonly"
+		"mw": "readonly",
+		"Map": "readonly"
 	},
-	"ignorePatterns": "select2*",
+	"ignorePatterns": ["scripts/", "tests/", "lib/"],
 	"rules": {
 		"no-console": "error",
 		"no-extra-parens": ["error", "all", { "nestedBinaryExpressions": false }],
@@ -35,7 +39,7 @@
 		"func-call-spacing": ["error", "never"],
 		"indent": ["error", "tab", { "outerIIFEBody": 0, "SwitchCase": 1 }],
 		"key-spacing": ["error", {"singleLine": {"beforeColon": false, "afterColon": true}}],
-		"keyword-spacing": ["error", { "after": true , "before": true}],
+		"keyword-spacing": ["error", { "after": true, "before": true}],
 		"linebreak-style": ["error", "unix"],
 		"no-array-constructor": "error",
 		"no-bitwise": "error",
@@ -45,6 +49,7 @@
 		"no-trailing-spaces": "error",
 		"no-unneeded-ternary": "error",
 		"no-whitespace-before-property": "error",
+		"quote-props": ["error", "consistent-as-needed"],
 		"quotes": ["error", "single", { "avoidEscape": true }],
 		"semi": ["error", "always"],
 		"space-before-blocks": "error",
@@ -52,7 +57,19 @@
 		"space-infix-ops": "error",
 		"space-unary-ops": "error",
 		"spaced-comment": ["error", "always", { "line": { "exceptions": ["-"] }, "block": { "balanced": true } }],
-		"switch-colon-spacing": "error"
+		"switch-colon-spacing": "error",
+		"no-nested-ternary": "error",
+		"no-restricted-syntax": [
+			"warn",
+			{
+				"message": "Using .done() is discouraged. See https://www.mediawiki.org/wiki/Manual:Coding_conventions/JavaScript#Asynchronous_code",
+				"selector": "MemberExpression > Identifier[name=\"done\"]"
+			},
+			{
+				"message": "Using .fail() is discouraged. See https://www.mediawiki.org/wiki/Manual:Coding_conventions/JavaScript#Asynchronous_code",
+				"selector": "MemberExpression > Identifier[name=\"fail\"]"
+			}
+		]
 	},
 	"reportUnusedDisableDirectives": true
 }
