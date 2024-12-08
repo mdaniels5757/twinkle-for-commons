@@ -7,7 +7,6 @@ mw.config.set({
 require('../morebits.js');
 require('../twinkle.js');
 require('../modules/twinklewarn.js');
-require('../modules/twinklexfd.js');
 global.Morebits = window.Morebits;
 
 global.assert = require('assert');
