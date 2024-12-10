@@ -171,7 +171,7 @@ Twinkle.image.callback.evaluate = function twinkleimageCallbackEvaluate(event) {
 
 Twinkle.image.callbacks = {
 	taggingImage: function(pageobj) {
-		let text = pageobj.getPageText();
+		const text = pageobj.getPageText();
 		const params = pageobj.getCallbackParameters();
 
 		var tag = '';

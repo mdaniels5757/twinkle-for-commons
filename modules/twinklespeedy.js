@@ -176,15 +176,6 @@ Twinkle.speedy.initDialog = function twinklespeedyInitDialog(callbackfunc) {
 					event.stopPropagation();
 				}
 			},
-			// {
-			// 	label: 'Tag for creation protection (salting) as well',
-			// 	value: 'salting',
-			// 	name: 'salting',
-			// 	tooltip: 'When selected, the speedy deletion tag will be accompanied by a {{salt}} tag requesting that the deleting administrator apply creation protection. Only select if this page has been repeatedly recreated.',
-			// 	event: function(event) {
-			// 		event.stopPropagation();
-			// 	}
-			// },
 			{
 				label: 'Tag with multiple criteria',
 				value: 'multiple',
@@ -283,8 +274,8 @@ Twinkle.speedy.callback.modeChanged = function twinklespeedyCallbackModeChanged(
 
 	if (!Morebits.isPageRedirect()) {
 		switch (namespace) {
-			case 0:  // gallery
-			case 1:  // talk
+			case 0: // gallery
+			case 1: // talk
 				appendList('Galleries', Twinkle.speedy.galleryList);
 				break;
 
@@ -293,26 +284,26 @@ Twinkle.speedy.callback.modeChanged = function twinklespeedyCallbackModeChanged(
 				appendList('User pages', Twinkle.speedy.userList);
 				break;
 
-			case 4:  // Commons
-			case 5:  // Commons talk
+			case 4: // Commons
+			case 5: // Commons talk
 				appendList('Commons', Twinkle.speedy.commonsList);
 				break;
 
-			case 6:  // file
-			case 7:  // file talk
+			case 6: // file
+			case 7: // file talk
 				appendList('Files', Twinkle.speedy.fileList);
 				if (!mode.isSysop) {
 					work_area.append({ type: 'div', label: 'Tagging for CSD F5 (no license/source/permission) can be done using Twinkle\'s "DI" tab.' });
 				}
 				break;
 
-			case 10:  // file
-			case 11:  // file talk
+			case 10: // file
+			case 11: // file talk
 				appendList('Template', Twinkle.speedy.templateList);
 				break;
 
-			case 14:  // category
-			case 15:  // category talk
+			case 14: // category
+			case 15: // category talk
 				appendList('Categories', Twinkle.speedy.categoryList);
 				break;
 
@@ -737,8 +728,7 @@ Twinkle.speedy.userList = [
 		tooltip:
 			'User requested deletion of their own user page or user-subpage. User pages that are blanked by the user may also be deleted under this criterion.',
 		subgroup:
-			mw.config.get('wgNamespaceNumber') === 3 && mw.config.get('wgTitle').indexOf('/') === -1
-				? {
+			mw.config.get('wgNamespaceNumber') === 3 && mw.config.get('wgTitle').indexOf('/') === -1 ? {
 					name: 'userreq_rationale',
 					parameter: '2',
 					type: 'input',
@@ -747,8 +737,7 @@ Twinkle.speedy.userList = [
 					tooltip:
 							'User talk pages are deleted only in highly exceptional circumstances. See WP:DELTALK.',
 					size: 60
-				  }
-				: null,
+				} : null,
 		hideSubgroupWhenMultiple: true
 	},
 	{
@@ -941,15 +930,7 @@ Twinkle.speedy.generalList = [
 	}
 ];
 
-Twinkle.speedy.redirectList = [
-	// {
-	// 	label: 'G2: Unused and implausible, or broken redirect',
-	// 	value: 'redir',
-	// 	code: 'g2',
-	// 	tooltip:
-	// 		'Page is an unused AND implausible redirect, or a redirect that is dependent on deleted or non-existent content. Unused talk page redirects created as a result of a page move and cross-namespace redirects may also be deleted under this criterion.',
-	// }
-];
+Twinkle.speedy.redirectList = [];
 
 Twinkle.speedy.normalizeHash = {
 	reason: 'db',
@@ -961,7 +942,6 @@ Twinkle.speedy.normalizeHash = {
 	author: 'g7',
 	g8: 'g8',
 	talk: 'g8',
-	g8: 'g8',
 	redirnone: 'g8',
 	advert: 'g10',
 	textcopyvio: 'g11',
@@ -1106,11 +1086,6 @@ Twinkle.speedy.callbacks = {
 
 			editsummary = 'Notification: speedy deletion' + (params.warnUser ? '' : ' nomination');
 			editsummary += ' of [[:' + Morebits.pageNameNorm + ']].';
-			// if (params.normalizeds.indexOf('g10') === -1) {  // no article name in summary for G10 taggings
-			// 	editsummary += ' of [[:' + Morebits.pageNameNorm + ']].';
-			// } else {
-			// 	editsummary += ' of an attack page.';
-			// }
 
 			usertalkpage.setAppendText(notifytext);
 			usertalkpage.setEditSummary(editsummary);
@@ -1147,8 +1122,6 @@ Twinkle.speedy.callbacks = {
 					if (params.promptForSummary) {
 						reason = prompt('Enter the deletion summary to use, or press OK to accept the automatically generated one.', reason);
 					}
-					console.log('Reason: %s', reason);
-					console.log('Code: %s', code);
 					Twinkle.speedy.callbacks.sysop.deletePage(reason, params);
 				});
 			}
@@ -1350,15 +1323,6 @@ Twinkle.speedy.callbacks = {
 					text = text.replace(/\{\{(mtc|(copy |move )?to ?commons|move to wikimedia commons|copy to wikimedia commons)[^}]*\}\}/gi, '');
 				}
 
-				// if (params.requestsalt) {
-				// 	code += '\n{{salt}}';
-				// 	// if (params.normalizeds.indexOf('g10') === -1) {
-				// 	// 	code += '\n{{salt}}';
-				// 	// } else {
-				// 	// 	code = '{{salt}}\n' + code;
-				// 	// }
-				// }
-
 				if (mw.config.get('wgPageContentModel') === 'Scribunto') {
 					// Scribunto isn't parsed like wikitext, so CSD templates on modules need special handling to work
 					let equals = '';
@@ -1402,10 +1366,6 @@ Twinkle.speedy.callbacks = {
 			} else { // Attempt to place on talk page
 				const talkName = new mw.Title(pageobj.getPageName()).getTalkPage().toText();
 				if (talkName !== pageobj.getPageName()) {
-					// if (params.requestsalt) {
-					// 	code += '\n{{salt}}';
-					// }
-
 					pageobj.getStatusElement().warn('Unable to edit page, placing tag on talk page');
 
 					const talk_page = new Morebits.wiki.Page(talkName, 'Automatically placing tag on talk page');
@@ -1452,10 +1412,7 @@ Twinkle.speedy.callbacks = {
 
 			let extraInfo = '';
 
-			// If a logged file is deleted but exists on commons, the wikilink will be blue, so provide a link to the log
-			const fileLogLink = mw.config.get('wgNamespaceNumber') === 6 ? ' ([{{fullurl:Special:Log|page=' + mw.util.wikiUrlencode(mw.config.get('wgPageName')) + '}} log])' : '';
-
-			let editsummary = 'Logging speedy deletion nomination';
+			const editsummary = 'Logging speedy deletion nomination';
 			let appendText = '# [[:' + Morebits.pageNameNorm + ']]. ';
 
 			if (params.normalizeds.length > 1) {
@@ -1492,9 +1449,6 @@ Twinkle.speedy.callbacks = {
 				}
 			}
 
-			// if (params.requestsalt) {
-			// 	appendText += '; requested creation protection ([[WP:SALT|salting]])';
-			// }
 			if (extraInfo) {
 				appendText += '; additional information:' + extraInfo;
 			}
@@ -1536,9 +1490,9 @@ Twinkle.speedy.getParameters = function twinklespeedyGetParameters(form, values)
 					}
 				}
 				if (form['csd.imgcopyvio_rationale']) {
-					var rationale = form['csd.imgcopyvio_rationale'].value;
-					if (rationale) {
-						currentParams['1'] = rationale;
+					var imageCopyvioRationale = form['csd.imgcopyvio_rationale'].value;
+					if (imageCopyvioRationale) {
+						currentParams['1'] = imageCopyvioRationale;
 					}
 				}
 				break;
@@ -1548,81 +1502,81 @@ Twinkle.speedy.getParameters = function twinklespeedyGetParameters(form, values)
 
 			case 'fairuse':
 				if (form['csd.fairuse_rationale']) {
-					var rationale = form['csd.fairuse_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var fairUseRationale = form['csd.fairuse_rationale'].value;
+					if (fairUseRationale) {
+						currentParams['2'] = fairUseRationale;
 					}
 				}
 				break;
 
 			case 'deriv':
 				if (form['csd.deriv_rationale']) {
-					var rationale = form['csd.deriv_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var derivRationale = form['csd.deriv_rationale'].value;
+					if (derivRationale) {
+						currentParams['2'] = derivRationale;
 					}
 				}
 				break;
 
 			case 'lrfailed':
 				if (form['csd.lrfailed_rationale']) {
-					var rationale = form['csd.lrfailed_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var lrFailedRationale = form['csd.lrfailed_rationale'].value;
+					if (lrFailedRationale) {
+						currentParams['2'] = lrFailedRationale;
 					}
 				}
 				break;
 
 			case 'vrt':
 				if (form['csd.vrt_rationale']) {
-					var rationale = form['csd.vrt_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var vrtRationale = form['csd.vrt_rationale'].value;
+					if (vrtRationale) {
+						currentParams['2'] = vrtRationale;
 					}
 				}
 				break;
 
 			case 'll':
 				if (form['csd.ll_rationale']) {
-					var rationale = form['csd.ll_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var llRationale = form['csd.ll_rationale'].value;
+					if (llRationale) {
+						currentParams['2'] = llRationale;
 					}
 				}
 				break;
 
 			case 'noimage':
 				if (form['csd.noimage_rationale']) {
-					var rationale = form['csd.noimage_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var noImageRationale = form['csd.noimage_rationale'].value;
+					if (noImageRationale) {
+						currentParams['2'] = noImageRationale;
 					}
 				}
 				break;
 
 			case 'duplicate':
 				if (form['csd.duplicate_filename']) {
-					var rationale = form['csd.duplicate_filename'].value;
-					if (rationale) {
-						currentParams['1'] = rationale;
+					var dupeRationale = form['csd.duplicate_filename'].value;
+					if (dupeRationale) {
+						currentParams['1'] = dupeRationale;
 					}
 				}
 				break;
 
 			case 'embeddeddata':
 				if (form['csd.embeddeddata_rationale']) {
-					var rationale = form['csd.embeddeddata_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var embedRationale = form['csd.embeddeddata_rationale'].value;
+					if (embedRationale) {
+						currentParams['2'] = embedRationale;
 					}
 				}
 				break;
 
 			case 'selfie':
 				if (form['csd.selfie_rationale']) {
-					var rationale = form['csd.selfie_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var selfieRationale = form['csd.selfie_rationale'].value;
+					if (selfieRationale) {
+						currentParams['2'] = selfieRationale;
 					}
 				}
 				break;
@@ -1638,14 +1592,14 @@ Twinkle.speedy.getParameters = function twinklespeedyGetParameters(form, values)
 
 			case 'catempty':
 				if (form['csd.catempty_rationale']) {
-					var rationale = form['csd.catempty_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var catEmptyRationale = form['csd.catempty_rationale'].value;
+					if (catEmptyRationale) {
+						currentParams['2'] = catEmptyRationale;
 					}
 				}
 				break;
 
-			case 'userreq':  // U1
+			case 'userreq': // U1
 				if (form['csd.userreq_rationale']) {
 					var u1rationale = form['csd.userreq_rationale'].value;
 					if (mw.config.get('wgNamespaceNumber') === 3 && !(/\//).test(mw.config.get('wgTitle')) &&
@@ -1660,9 +1614,9 @@ Twinkle.speedy.getParameters = function twinklespeedyGetParameters(form, values)
 
 			case 'inappuserspace':
 				if (form['csd.inappuserspace_rationale']) {
-					var rationale = form['csd.inappuserspace_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var u3rationale = form['csd.inappuserspace_rationale'].value;
+					if (u3rationale) {
+						currentParams['2'] = u3rationale;
 					}
 				}
 				break;
@@ -1681,23 +1635,23 @@ Twinkle.speedy.getParameters = function twinklespeedyGetParameters(form, values)
 
 			case 't2':
 				if (form['csd.t2_rationale']) {
-					var rationale = form['csd.t2_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var t2rationale = form['csd.t2_rationale'].value;
+					if (t2rationale) {
+						currentParams['2'] = t2rationale;
 					}
 				}
 				break;
 
 			case 'vandalism':
 				if (form['csd.vandalism_rationale']) {
-					var rationale = form['csd.vandalism_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var g3rationale = form['csd.vandalism_rationale'].value;
+					if (g3rationale) {
+						currentParams['2'] = g3rationale;
 					}
 				}
 				break;
 
-			case 'repost':  // G4
+			case 'repost': // G4
 				if (form['csd.repost_xfd']) {
 					var deldisc = form['csd.repost_xfd'].value;
 					if (deldisc) {
@@ -1708,49 +1662,48 @@ Twinkle.speedy.getParameters = function twinklespeedyGetParameters(form, values)
 
 			case 'g6':
 				if (form['csd.g6_rationale']) {
-					var rationale = form['csd.g6_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var g6rationale = form['csd.g6_rationale'].value;
+					if (g6rationale) {
+						currentParams['2'] = g6rationale;
 					}
 				}
 				break;
 
 			case 'author':
 				if (form['csd.author_rationale']) {
-					var rationale = form['csd.author_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var g7rationale = form['csd.author_rationale'].value;
+					if (g7rationale) {
+						currentParams['2'] = g7rationale;
 					}
 				}
 				break;
 
 			case 'g8':
 				if (form['csd.g8_rationale']) {
-					var rationale = form['csd.g8_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var g8rationale = form['csd.g8_rationale'].value;
+					if (g8rationale) {
+						currentParams['2'] = g8rationale;
 					}
 				}
 				break;
 
 			case 'advert':
 				if (form['csd.advert_rationale']) {
-					var rationale = form['csd.advert_rationale'].value;
-					if (rationale) {
-						currentParams['2'] = rationale;
+					var g10rationale = form['csd.advert_rationale'].value;
+					if (g10rationale) {
+						currentParams['2'] = g10rationale;
 					}
 				}
 				break;
 
 			case 'textcopyvio':
 				if (form['csd.textcopyvio_rationale']) {
-					var rationale = form['csd.textcopyvio_rationale'].value;
-					if (!rationale || !rationale.trim()) {
+					var g11rationale = form['csd.textcopyvio_rationale'].value;
+					if (!g11rationale || !g11rationale.trim()) {
 						alert('CSD G11:  Include the URL or source of the copyvio');
 						parameters = null;
 						return false;
 					}
-					currentParams.article = duptitle;
 				}
 				break;
 
