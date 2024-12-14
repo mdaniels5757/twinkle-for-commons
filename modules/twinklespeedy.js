@@ -1350,6 +1350,7 @@ Twinkle.speedy.callbacks = {
 					editsummary = 'Requesting speedy deletion ([[COM:CSD#' + params.normalizeds[0].toUpperCase() + '|CSD ' + params.normalizeds[0].toUpperCase() + ']]).';
 				}
 
+				// Blank attack pages
 				if (params.normalizeds.includes('g10')) {
 					text = code;
 				} else {
