@@ -441,10 +441,10 @@ Twinkle.speedy.generateCsdList = function twinklespeedyGenerateCsdList(list, mod
 			return null;
 		}
 
-		if (criterion.showInNamespaces && criterion.showInNamespaces.indexOf(pageNamespace) < 0) {
+		if (criterion.showInNamespaces && !criterion.showInNamespaces.includes(pageNamespace)) {
 			return null;
 		}
-		if (criterion.hideInNamespaces && criterion.hideInNamespaces.indexOf(pageNamespace) > -1) {
+		if (criterion.hideInNamespaces && criterion.hideInNamespaces.includes(pageNamespace)) {
 			return null;
 		}
 
@@ -728,7 +728,7 @@ Twinkle.speedy.userList = [
 		tooltip:
 			'User requested deletion of their own user page or user-subpage. User pages that are blanked by the user may also be deleted under this criterion.',
 		subgroup:
-			mw.config.get('wgNamespaceNumber') === 3 && mw.config.get('wgTitle').indexOf('/') === -1 ? {
+			mw.config.get('wgNamespaceNumber') === 3 && !mw.config.get('wgTitle').includes('/') ? {
 					name: 'userreq_rationale',
 					parameter: '2',
 					type: 'input',
@@ -1283,12 +1283,12 @@ Twinkle.speedy.callbacks = {
 			params.utparams = buildData[1];
 
 			// Set the correct value for |ts= parameter in {{db-g13}}
-			if (params.normalizeds.indexOf('g13') !== -1) {
+			if (params.normalizeds.includes('g13')) {
 				code = code.replace('$TIMESTAMP', pageobj.getLastEditTime());
 			}
 
 			// Tag if possible, post on talk if not
-			if (pageobj.canEdit() && ['wikitext', 'Scribunto', 'javascript', 'css', 'sanitized-css'].indexOf(pageobj.getContentModel()) !== -1 && mw.config.get('wgNamespaceNumber') !== 710 /* TimedText */) {
+			if (pageobj.canEdit() && ['wikitext', 'Scribunto', 'javascript', 'css', 'sanitized-css'].includes(pageobj.getContentModel()) && mw.config.get('wgNamespaceNumber') !== 710 /* TimedText */) {
 				let text = pageobj.getPageText();
 
 				statelem.status('Checking for tags on the page...');
@@ -1326,11 +1326,11 @@ Twinkle.speedy.callbacks = {
 				if (mw.config.get('wgPageContentModel') === 'Scribunto') {
 					// Scribunto isn't parsed like wikitext, so CSD templates on modules need special handling to work
 					let equals = '';
-					while (code.indexOf(']' + equals + ']') !== -1) {
+					while (code.includes(']' + equals + ']')) {
 						equals += '=';
 					}
 					code = "require('Module:Module wikitext')._addText([" + equals + '[' + code + ']' + equals + ']);';
-				} else if (['javascript', 'css', 'sanitized-css'].indexOf(mw.config.get('wgPageContentModel')) !== -1) {
+				} else if (['javascript', 'css', 'sanitized-css'].includes(mw.config.get('wgPageContentModel'))) {
 					// Likewise for JS/CSS pages
 					code = '/* ' + code + ' */';
 				}
@@ -1351,7 +1351,7 @@ Twinkle.speedy.callbacks = {
 				}
 
 				// Blank attack pages
-				if (params.normalizeds.indexOf('g10') !== -1) {
+				if (params.normalizeds.includes('g10')) {
 					text = code;
 				} else {
 					// Insert tag after short description or any hatnotes
@@ -1778,18 +1778,18 @@ Twinkle.speedy.callback.evaluateSysop = function twinklespeedyCallbackEvaluateSy
 	// analyse each criterion to determine whether to watch the page, prompt for summary, or notify the creator
 	let watchPage, promptForSummary;
 	normalizeds.forEach((norm) => {
-		if (Twinkle.getPref('watchSpeedyPages').indexOf(norm) !== -1) {
+		if (Twinkle.getPref('watchSpeedyPages').includes(norm)) {
 			watchPage = Twinkle.getPref('watchSpeedyExpiry');
 		}
-		if (Twinkle.getPref('promptForSpeedyDeletionSummary').indexOf(norm) !== -1) {
+		if (Twinkle.getPref('promptForSpeedyDeletionSummary').includes(norm)) {
 			promptForSummary = true;
 		}
 	});
 
-	const warnusertalk = form.warnusertalk.checked && normalizeds.some((norm, index) => Twinkle.getPref('warnUserOnSpeedyDelete').indexOf(norm) !== -1 &&
+	const warnusertalk = form.warnusertalk.checked && normalizeds.some((norm, index) => Twinkle.getPref('warnUserOnSpeedyDelete').includes(norm) &&
 			!(norm === 'g6' && values[index] !== 'copypaste'));
 
-	const welcomeuser = warnusertalk && normalizeds.some((norm) => Twinkle.getPref('welcomeUserOnSpeedyDeletionNotification').indexOf(norm) !== -1);
+	const welcomeuser = warnusertalk && normalizeds.some((norm) => Twinkle.getPref('welcomeUserOnSpeedyDeletionNotification').includes(norm));
 
 	const params = {
 		values: values,
@@ -1831,12 +1831,12 @@ Twinkle.speedy.callback.evaluateUser = function twinklespeedyCallbackEvaluateUse
 	const normalizeds = values.map((value) => Twinkle.speedy.normalizeHash[value]);
 
 	// analyse each criterion to determine whether to watch the page/notify the creator
-	const watchPage = normalizeds.some((csdCriteria) => Twinkle.getPref('watchSpeedyPages').indexOf(csdCriteria) !== -1) && Twinkle.getPref('watchSpeedyExpiry');
+	const watchPage = normalizeds.some((csdCriteria) => Twinkle.getPref('watchSpeedyPages').includes(csdCriteria)) && Twinkle.getPref('watchSpeedyExpiry');
 
-	const notifyuser = form.notify.checked && normalizeds.some((norm, index) => Twinkle.getPref('notifyUserOnSpeedyDeletionNomination').indexOf(norm) !== -1 &&
+	const notifyuser = form.notify.checked && normalizeds.some((norm, index) => Twinkle.getPref('notifyUserOnSpeedyDeletionNomination').includes(norm) &&
 			!(norm === 'g6' && values[index] !== 'copypaste'));
-	const welcomeuser = notifyuser && normalizeds.some((norm) => Twinkle.getPref('welcomeUserOnSpeedyDeletionNotification').indexOf(norm) !== -1);
-	const csdlog = Twinkle.getPref('logSpeedyNominations') && normalizeds.some((norm) => Twinkle.getPref('noLogOnSpeedyNomination').indexOf(norm) === -1);
+	const welcomeuser = notifyuser && normalizeds.some((norm) => Twinkle.getPref('welcomeUserOnSpeedyDeletionNotification').includes(norm));
+	const csdlog = Twinkle.getPref('logSpeedyNominations') && normalizeds.some((norm) => !Twinkle.getPref('noLogOnSpeedyNomination').includes(norm));
 
 	const params = {
 		values: values,

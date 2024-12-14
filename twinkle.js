@@ -375,7 +375,7 @@ Twinkle.load = function () {
 		activeSpecialPageList = activeSpecialPageList.concat([ 'DeletedContributions', 'Prefixindex' ]);
 	}
 	if (mw.config.get('wgNamespaceNumber') === -1 &&
-		activeSpecialPageList.indexOf(mw.config.get('wgCanonicalSpecialPageName')) === -1) {
+		!activeSpecialPageList.includes(mw.config.get('wgCanonicalSpecialPageName'))) {
 		return;
 	}
 
@@ -392,7 +392,7 @@ Twinkle.load = function () {
 	// Redefine addInitCallback so that any modules being loaded now on are directly
 	// initialised rather than added to initCallbacks array
 	Twinkle.addInitCallback = function(func, name) {
-		if (!name || Twinkle.disabledModules.indexOf(name) === -1) {
+		if (!name || !Twinkle.disabledModules.includes(name)) {
 			func();
 		}
 	};
