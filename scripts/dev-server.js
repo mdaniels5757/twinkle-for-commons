@@ -61,10 +61,10 @@ server.listen(port, hostname, async () => {
 	}
 	try {
 		user = await mwn.init({
-			"apiUrl": "https://en.wikipedia.org/w/api.php",
+			"apiUrl": "https://commons.wikimedia.org/w/api.php",
 			"username": process.env.MW_USERNAME,
 			"password": process.env.MW_PASSWORD,
-			"oauth2Token": process.env.MW_OAUTH2_TOKEN,
+			"OAuth2AccessToken": process.env.MW_OAUTH2_TOKEN,
 			"silent": true
 		});
 		initTime = Date.now();
