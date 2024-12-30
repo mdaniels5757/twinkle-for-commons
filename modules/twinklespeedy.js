@@ -629,7 +629,6 @@ Twinkle.speedy.fileList = [
 		subgroup: {
 			name: 'duplicate_filename',
 			parameter: '1',
-			log: '[[:$1]]',
 			type: 'input',
 			label: 'File this is redundant to: ',
 			tooltip: 'The "File:" prefix must be left off.'
@@ -693,7 +692,7 @@ Twinkle.speedy.categoryList = [
 			name: 'catbadname_name',
 			parameter: '2',
 			type: 'input',
-			label: 'Name of correctly named category: ',
+			label: 'Name of correctly named category, without the "Category:" prefix: ',
 			size: 60
 		}
 	},
@@ -845,7 +844,6 @@ Twinkle.speedy.generalList = [
 		subgroup: {
 			name: 'repost_xfd',
 			parameter: '2',
-			log: '[[:$1]]',
 			type: 'input',
 			label: 'Page where the deletion discussion took place: ',
 			tooltip: 'Must start with "Commons:"',
@@ -1406,8 +1404,18 @@ Twinkle.speedy.callbacks = {
 				(Morebits.userIsSysop ? '\n\nThis log does not track outright speedy deletions made using Twinkle.' : '');
 
 			const formatParamLog = function(normalize, csdparam, input) {
-				input = '[[:' + input + ']]';
-				return ' {' + normalize + ' ' + csdparam + ': ' + input + '}';
+				console.log(normalize + '; ' + csdparam + '; ' + input);
+				if ((normalize === 'F8' && csdparam === '1')) {
+					input = '[[:File:' + input + ']]';
+				} else if ((normalize === 'F1' && csdparam === 'source')) {
+					input = '[' + input + ']';
+				} else if ((normalize === 'C1' && csdparam === '2')) {
+					input = '[[:Category:' + input + ']]';
+				} else if ((normalize === 'G4' && csdparam === '2')) {
+					input = '[[' + input + ']]';
+				}
+				
+				return ' { ' + normalize + ' ' + csdparam + ': ' + input + ' }';
 			};
 
 			let extraInfo = '';
@@ -1583,7 +1591,7 @@ Twinkle.speedy.getParameters = function twinklespeedyGetParameters(form, values)
 
 			case 'catbadname':
 				if (form['csd.catbadname_name']) {
-					var correctName = form['csd.catbadname_name'];
+					var correctName = form['csd.catbadname_name'].value;
 					if (correctName) {
 						currentParams['2'] = correctName;
 					}
