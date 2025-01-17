@@ -509,7 +509,6 @@ Twinkle.speedy.fileList = [
 			{
 				name: 'imgcopyvio_url',
 				parameter: 'source',
-				utparam: '3',
 				type: 'input',
 				label:
 					'URL of the copyvio, including the "http://".  If the copyvio is of a non-internet source and you cannot provide a URL, you must use the deletion rationale box. ',
@@ -518,7 +517,6 @@ Twinkle.speedy.fileList = [
 			{
 				name: 'imgcopyvio_rationale',
 				parameter: '1',
-				utparam: '2',
 				type: 'input',
 				label: 'Deletion rationale for non-internet copyvios: ',
 				size: 60
@@ -541,7 +539,6 @@ Twinkle.speedy.fileList = [
 		subgroup: {
 			name: 'fairuse_rationale',
 			parameter: '2',
-			utparam: '2',
 			type: 'input',
 			label: 'Optional explanation: ',
 			size: 60
@@ -556,7 +553,6 @@ Twinkle.speedy.fileList = [
 		subgroup: {
 			name: 'deriv_rationale',
 			parameter: '2',
-			utparam: '2',
 			type: 'input',
 			label: 'Optional explanation: ',
 			size: 60
@@ -1348,14 +1344,9 @@ Twinkle.speedy.callbacks = {
 					editsummary = 'Requesting speedy deletion ([[COM:CSD#' + params.normalizeds[0].toUpperCase() + '|CSD ' + params.normalizeds[0].toUpperCase() + ']]).';
 				}
 
-				// Blank attack pages
-				if (params.normalizeds.includes('g10')) {
-					text = code;
-				} else {
-					// Insert tag after short description or any hatnotes
-					const wikipage = new Morebits.wikitext.Page(text);
-					text = wikipage.insertAfterTemplates(code + '\n', Twinkle.hatnoteRegex).getText();
-				}
+				// Insert tag after short description or any hatnotes
+				const wikipage = new Morebits.wikitext.Page(text);
+				text = wikipage.insertAfterTemplates(code + '\n', Twinkle.hatnoteRegex).getText();
 
 				pageobj.setPageText(text);
 				pageobj.setEditSummary(editsummary);
@@ -1731,7 +1722,7 @@ Twinkle.speedy.getUserTalkParameters = function twinklespeedyGetUserTalkParamete
 
 	switch (normalized) {
 		case 'db': // Speedydelete and Speedynote
-			utparams.reason = parameters['1'];
+			utparams['2'] = parameters['1'];
 			break;
 		case 'f1': // Copyvio and Copyvionote
 			utparams.source = parameters.source;
